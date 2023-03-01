@@ -9,3 +9,6 @@ project(Brain-Visualisation)
 set(SOURCES "src/main.cpp")
 add_executable("${PROJECT_NAME}" ${SOURCES})
 
+find_package(VTK REQUIRED)
+include("${VTK_USE_FILE}")
+target_link_libraries("${PROJECT_NAME}" PRIVATE ${VTK_LIBRARIES})
