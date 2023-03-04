@@ -1,30 +1,96 @@
-#include <vtkAutoInit.h>
-
-VTK_MODULE_INIT(vtkRenderingOpenGL2);
-VTK_MODULE_INIT(vtkRenderingFreeType);
-VTK_MODULE_INIT(vtkInteractionStyle);
-
-#include <vtkSmartPointer.h>
-#include <vtkTextActor.h>
-#include <vtkRenderer.h>
+#include <vtkActor.h>
+#include <vtkCamera.h>
+#include <vtkCylinderSource.h>
+#include <vtkNamedColors.h>
+#include <vtkNew.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkProperty.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
+#include <vtkRenderer.h>
+#include <vtkTable.h>
+
+#include <array>
+#include <string_view>
+#include <vtkDelimitedTextReader.h>
+#include <vtkVertexGlyphFilter.h>
+#include <vtkGlyph3D.h>
+#include <vtkSphereSource.h>
+#include <vtkGlyph3DMapper.h>
+
+std::string dataLocation = "../data";
+
+vtkNew<vtkNamedColors> colors;
+
+vtkNew<vtkPoints> loadPositions() {
+    vtkNew<vtkDelimitedTextReader> reader;
+    std::string path = dataLocation + "/viz-calcium/positions/rank_0_positions.txt";
+    reader->SetFileName(path.data());
+    reader->DetectNumericColumnsOn();
+    reader->SetFieldDelimiterCharacters(" ");
+    reader->Update();
+
+    vtkNew<vtkPoints> result;
+    vtkTable* table = reader->GetOutput();
+    for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++)
+    {
+        result->InsertNextPoint((table->GetValue(i, 1)).ToDouble(),
+            (table->GetValue(i, 2)).ToDouble(),
+            (table->GetValue(i, 3)).ToDouble());
+    }
+    return result;
+}
+
+void render(vtkActor* actor) {
+    vtkNew<vtkRenderer> renderer;
+    renderer->AddActor(actor);
+
+    renderer->SetBackground(colors->GetColor3d("LightYellow").GetData());
+    // Zoom in a little by accessing the camera and invoking its "Zoom" method.
+    renderer->ResetCamera();
+    renderer->GetActiveCamera()->Zoom(1.5);
+
+    // The render window is the actual GUI window
+    // that appears on the computer screen
+    vtkNew<vtkRenderWindow> renderWindow;
+    renderWindow->SetSize(800, 800);
+    renderWindow->AddRenderer(renderer);
+    renderWindow->SetWindowName("Brain Visualisation");
+
+    // The render window interactor captures mouse events
+    // and will perform appropriate camera or actor manipulation
+    // depending on the nature of the events.
+    vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
+    renderWindowInteractor->SetRenderWindow(renderWindow);
+
+    // This starts the event loop and as a side effect causes an initial render.
+    renderWindow->Render();
+    renderWindowInteractor->Start();
+
+}
 
 int main() {
-    auto textActor = vtkSmartPointer<vtkTextActor>::New();
-    textActor->SetInput("Hello World");
+    vtkNew<vtkSphereSource> sphere;
+    sphere->SetPhiResolution(10);
+    sphere->SetThetaResolution(10);
+    sphere->SetRadius(.08);
 
-    auto renderer = vtkSmartPointer<vtkRenderer>::New();
-    renderer->AddActor(textActor);
-    renderer->ResetCamera();
+    auto points = loadPositions();
 
-    auto interactor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+    vtkNew<vtkPolyData> polyData;
+    polyData->SetPoints(points);
 
-    auto renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
-    renderWindow->AddRenderer(renderer);
-    renderWindow->SetInteractor(interactor);
+    vtkNew<vtkGlyph3DMapper> glyph3D;
+    glyph3D->SetInputData(polyData);
+    glyph3D->SetSourceConnection(sphere->GetOutputPort());
+    glyph3D->Update();
 
-    interactor->Start();
+    vtkNew<vtkActor> actor;
+    actor->SetMapper(glyph3D);
+    actor->GetProperty()->SetPointSize(30);
+    actor->GetProperty()->SetColor(colors->GetColor3d("Tomato").GetData());
 
-    return 0;
+    render(actor);
+
+    return EXIT_SUCCESS;
 }

@@ -10,5 +10,10 @@ set(SOURCES "src/main.cpp")
 add_executable("${PROJECT_NAME}" ${SOURCES})
 
 find_package(VTK REQUIRED)
-include("${VTK_USE_FILE}")
+
 target_link_libraries("${PROJECT_NAME}" PRIVATE ${VTK_LIBRARIES})
+
+vtk_module_autoinit(
+  TARGETS "${PROJECT_NAME}"
+  MODULES ${VTK_LIBRARIES}
+)
