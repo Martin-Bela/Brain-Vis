@@ -102,6 +102,8 @@ namespace { //anonymous namespace
         // and will perform appropriate camera or actor manipulation
         // depending on the nature of the events.
         vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
+        vtkNew<vtkInteractorStyleTrackballCamera> trackballCamera;
+        renderWindowInteractor->SetInteractorStyle(trackballCamera);
         renderWindowInteractor->SetRenderWindow(renderWindow);
 
         // This starts the event loop and as a side effect causes an initial render.
