@@ -23,7 +23,7 @@
 
 namespace { //anonymous namespace
 
-    std::filesystem::path dataFolder = "../data/viz-calcium";
+    std::filesystem::path dataFolder = "./data/viz-calcium";
 
     vtkNew<vtkNamedColors> namedColors;
 
@@ -112,6 +112,13 @@ namespace { //anonymous namespace
 }//namepsace
 
 int main() {
+    if (std::filesystem::current_path().filename().string().starts_with("build")) {
+        // cd ..
+        auto newPath = std::filesystem::current_path().parent_path();
+        std::filesystem::current_path(newPath);
+    }
+    std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
+
     vtkNew<vtkSphereSource> sphere;
     sphere->SetPhiResolution(10);
     sphere->SetThetaResolution(10);
