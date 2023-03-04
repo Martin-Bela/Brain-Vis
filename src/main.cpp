@@ -1,6 +1,5 @@
 #include <vtkActor.h>
 #include <vtkCamera.h>
-#include <vtkCylinderSource.h>
 #include <vtkNamedColors.h>
 #include <vtkNew.h>
 #include <vtkPolyDataMapper.h>
@@ -11,63 +10,70 @@
 #include <vtkTable.h>
 
 #include <array>
-#include <string_view>
+#include <filesystem>
+
 #include <vtkDelimitedTextReader.h>
 #include <vtkVertexGlyphFilter.h>
 #include <vtkGlyph3D.h>
 #include <vtkSphereSource.h>
 #include <vtkGlyph3DMapper.h>
+#include <vtkSliderWidget.h>
+#include <vtkWidgetEvent.h>
 
-std::string dataLocation = "../data";
+namespace { //anonymous namespace
 
-vtkNew<vtkNamedColors> colors;
+    std::filesystem::path dataFolder = "../data/viz-calcium";
 
-vtkNew<vtkPoints> loadPositions() {
-    vtkNew<vtkDelimitedTextReader> reader;
-    std::string path = dataLocation + "/viz-calcium/positions/rank_0_positions.txt";
-    reader->SetFileName(path.data());
-    reader->DetectNumericColumnsOn();
-    reader->SetFieldDelimiterCharacters(" ");
-    reader->Update();
+    vtkNew<vtkNamedColors> colors;
 
-    vtkNew<vtkPoints> result;
-    vtkTable* table = reader->GetOutput();
-    for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++)
-    {
-        result->InsertNextPoint((table->GetValue(i, 1)).ToDouble(),
-            (table->GetValue(i, 2)).ToDouble(),
-            (table->GetValue(i, 3)).ToDouble());
+    vtkNew<vtkPoints> loadPositions() {
+        vtkNew<vtkDelimitedTextReader> reader;
+        auto path = (dataFolder / "positions/rank_0_positions.txt").string();
+        reader->SetFileName(path.data());
+        reader->DetectNumericColumnsOn();
+        reader->SetFieldDelimiterCharacters(" ");
+        reader->Update();
+
+        vtkNew<vtkPoints> result;
+        vtkTable* table = reader->GetOutput();
+        for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++)
+        {
+            result->InsertNextPoint(
+                (table->GetValue(i, 1)).ToDouble(),
+                (table->GetValue(i, 2)).ToDouble(),
+                (table->GetValue(i, 3)).ToDouble());
+        }
+        return result;
     }
-    return result;
-}
 
-void render(vtkActor* actor) {
-    vtkNew<vtkRenderer> renderer;
-    renderer->AddActor(actor);
+    void render(vtkActor* actor) {
+        vtkNew<vtkRenderer> renderer;
+        renderer->AddActor(actor);
 
-    renderer->SetBackground(colors->GetColor3d("LightYellow").GetData());
-    // Zoom in a little by accessing the camera and invoking its "Zoom" method.
-    renderer->ResetCamera();
-    renderer->GetActiveCamera()->Zoom(1.5);
+        renderer->SetBackground(colors->GetColor3d("LightYellow").GetData());
+        // Zoom in a little by accessing the camera and invoking its "Zoom" method.
+        renderer->ResetCamera();
+        renderer->GetActiveCamera()->Zoom(1.5);
 
-    // The render window is the actual GUI window
-    // that appears on the computer screen
-    vtkNew<vtkRenderWindow> renderWindow;
-    renderWindow->SetSize(800, 800);
-    renderWindow->AddRenderer(renderer);
-    renderWindow->SetWindowName("Brain Visualisation");
+        // The render window is the actual GUI window
+        // that appears on the computer screen
+        vtkNew<vtkRenderWindow> renderWindow;
+        renderWindow->SetSize(800, 800);
+        renderWindow->AddRenderer(renderer);
+        renderWindow->SetWindowName("Brain Visualisation");
 
-    // The render window interactor captures mouse events
-    // and will perform appropriate camera or actor manipulation
-    // depending on the nature of the events.
-    vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
-    renderWindowInteractor->SetRenderWindow(renderWindow);
+        // The render window interactor captures mouse events
+        // and will perform appropriate camera or actor manipulation
+        // depending on the nature of the events.
+        vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
+        renderWindowInteractor->SetRenderWindow(renderWindow);
 
-    // This starts the event loop and as a side effect causes an initial render.
-    renderWindow->Render();
-    renderWindowInteractor->Start();
+        // This starts the event loop and as a side effect causes an initial render.
+        renderWindow->Render();
+        renderWindowInteractor->Start();
+    }
 
-}
+}//namepsace
 
 int main() {
     vtkNew<vtkSphereSource> sphere;
