@@ -20,6 +20,7 @@
 #include <vtkGlyph3DMapper.h>
 #include <vtkSliderWidget.h>
 #include <vtkWidgetEvent.h>
+#include <vtkInteractorStyleTrackballCamera.h>
 
 namespace { //anonymous namespace
 
