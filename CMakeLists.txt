@@ -6,8 +6,9 @@ set (CMAKE_CXX_STANDARD 20)
 
 project(Brain-Visualisation)
 
-set(SOURCES "src/main.cpp")
-add_executable("${PROJECT_NAME}" ${SOURCES})
+add_executable(Preprocess "src/preprocess.cpp" "src/neuronProperties.hpp")
+
+add_executable("${PROJECT_NAME}" "src/main.cpp" "src/neuronProperties.hpp")
 
 find_package(VTK REQUIRED)
 
