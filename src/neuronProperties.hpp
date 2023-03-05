@@ -1,8 +1,10 @@
+#include <bit>
 #include <cstdint>
 #include <fstream>
+#include <limits>
 
 struct NeuronProperties {
-    bool fired;
+    uint8_t fired; // 1 or 0
     float firedFraction;
     float electricActivity;
     float secondaryVariable;
@@ -50,3 +52,10 @@ struct NeuronProperties {
         return result;
     }
 };
+
+constexpr int x = sizeof(NeuronProperties);
+
+static_assert(sizeof(NeuronProperties) == 12 * 4);
+static_assert(offsetof(NeuronProperties, firedFraction) == 4);
+static_assert(std::endian::native == std::endian::little);
+static_assert(std::numeric_limits<float>::is_iec559);
