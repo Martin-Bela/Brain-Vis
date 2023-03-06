@@ -1,37 +1,19 @@
 #include <vtkActor.h>
-#include <vtkCamera.h>
-#include <vtkNamedColors.h>
-#include <vtkNew.h>
+#include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkPointData.h>
 #include <vtkProperty.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderWindowInteractor.h>
-#include <vtkRenderer.h>
 #include <vtkTable.h>
-
 #include <vtkDelimitedTextReader.h>
-#include <vtkVertexGlyphFilter.h>
-#include <vtkGlyph3D.h>
 #include <vtkSphereSource.h>
 #include <vtkGlyph3DMapper.h>
-#include <vtkSliderWidget.h>
-#include <vtkWidgetEvent.h>
-#include <vtkInteractorStyleTrackballCamera.h>
 
-#include <array>
-#include <filesystem>
-#include <random>
 
+#include "context.hpp"
+#include "utility.hpp"
 #include "neuronProperties.hpp"
 
-std::mt19937 rand_gen(time(0));
-
 namespace { //anonymous namespace
-
-    std::filesystem::path dataFolder = "./data/viz-calcium";
-
-    vtkNew<vtkNamedColors> namedColors;
 
     vtkNew<vtkPoints> loadPositions() {
         vtkNew<vtkDelimitedTextReader> reader;
@@ -51,48 +33,6 @@ namespace { //anonymous namespace
                 (table->GetValue(i, 3)).ToDouble());
         }
         return positions;
-    }
-
-    // from https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
-    std::array<float,3> hslToRgb(std::array<float, 3> hsl) {
-
-        auto hueToRgb = [](float p, float q, float t) {
-            if (t < 0.f)
-                t += 1.f;
-            if (t > 1.f)
-                t -= 1.f;
-            if (t < 1.f / 6.f)
-                return p + (q - p) * 6.f * t;
-            if (t < 1.f / 2.f)
-                return q;
-            if (t < 2.f / 3.f)
-                return p + (q - p) * (2.f / 3.f - t) * 6.f;
-            return p;
-        };
-
-        auto [h, s, l] = hsl;
-        float r, g, b;
-
-        if (s == 0.f) {
-            r = g = b = l; // achromatic
-        }
-        else {
-            float q = l < 0.5f ? l * (1 + s) : l + s - l * s;
-            float p = 2 * l - q;
-            r = hueToRgb(p, q, h + 1.f / 3.f);
-            g = hueToRgb(p, q, h);
-            b = hueToRgb(p, q, h - 1.f / 3.f);
-        }
-        return { r, g, b };
-    }
-
-    std::array<unsigned char, 3> generateNiceColor() {
-        std::uniform_real_distribution<float> dist(0, 1);
-        std::array<float, 3> hsl = { dist(rand_gen), 1.0, dist(rand_gen) / 2.f + 0.25f };
-        auto rgb = hslToRgb(hsl);
-        return { static_cast<unsigned char>(rgb[0] * 255),
-            static_cast<unsigned char>(rgb[1] * 255),
-            static_cast<unsigned char>(rgb[2] * 255) };
     }
 
     vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int pointCount) {
@@ -149,36 +89,45 @@ namespace { //anonymous namespace
         return colors;
     }
 
-    void render(vtkActor* actor) {
-        vtkNew<vtkRenderer> renderer;
-        renderer->AddActor(actor);
 
-        renderer->SetBackground(namedColors->GetColor3d("LightYellow").GetData());
-        // Zoom in a little by accessing the camera and invoking its "Zoom" method.
-        renderer->ResetCamera();
-        renderer->GetActiveCamera()->Zoom(1.5);
+    class Visualisation {
+    public:
+        Context context;
 
-        // The render window is the actual GUI window
-        // that appears on the computer screen
-        vtkNew<vtkRenderWindow> renderWindow;
-        renderWindow->SetSize(800, 800);
-        renderWindow->AddRenderer(renderer);
-        renderWindow->SetWindowName("Brain Visualisation");
 
-        // The render window interactor captures mouse events
-        // and will perform appropriate camera or actor manipulation
-        // depending on the nature of the events.
-        vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
-        vtkNew<vtkInteractorStyleTrackballCamera> trackballCamera;
-        renderWindowInteractor->SetInteractorStyle(trackballCamera);
-        renderWindowInteractor->SetRenderWindow(renderWindow);
+        void run() {
+            vtkNew<vtkSphereSource> sphere;
+            sphere->SetPhiResolution(10);
+            sphere->SetThetaResolution(10);
+            sphere->SetRadius(.08);
+            sphere->SetRadius(2);
 
-        // This starts the event loop and as a side effect causes an initial render.
-        renderWindow->Render();
-        renderWindowInteractor->Start();
-    }
+            auto points = loadPositions();
+
+            vtkNew<vtkPolyData> polyData;
+            polyData->SetPoints(points);
+
+            //auto colors = loadColors(80, points->GetNumberOfPoints());
+            auto colors = colorsFromPositions(*points);
+            polyData->GetPointData()->SetScalars(colors);
+
+            vtkNew<vtkGlyph3DMapper> glyph3D;
+            glyph3D->SetInputData(polyData);
+            glyph3D->SetSourceConnection(sphere->GetOutputPort());
+            glyph3D->Update();
+
+            vtkNew<vtkActor> actor;
+            actor->SetMapper(glyph3D);
+            actor->GetProperty()->SetPointSize(30);
+            actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
+
+            context.addActor(actor);
+            context.startRendering();
+        }
+    };
 
 }//namepsace
+
 
 int main() {
     if (std::filesystem::current_path().filename().string().starts_with("build")) {
@@ -188,31 +137,8 @@ int main() {
     }
     std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
 
-    vtkNew<vtkSphereSource> sphere;
-    sphere->SetPhiResolution(10);
-    sphere->SetThetaResolution(10);
-    sphere->SetRadius(.08);
-
-    auto points = loadPositions();
-
-    vtkNew<vtkPolyData> polyData;
-    polyData->SetPoints(points);
-
-    //auto colors = loadColors(80, points->GetNumberOfPoints());
-    auto colors = colorsFromPositions(*points);
-    polyData->GetPointData()->SetScalars(colors);
-
-    vtkNew<vtkGlyph3DMapper> glyph3D;
-    glyph3D->SetInputData(polyData);
-    glyph3D->SetSourceConnection(sphere->GetOutputPort());
-    glyph3D->Update();
-
-    vtkNew<vtkActor> actor;
-    actor->SetMapper(glyph3D);
-    actor->GetProperty()->SetPointSize(30);
-    actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
-
-    render(actor);
-
+    Visualisation visualisation;
+    visualisation.run();
+    
     return EXIT_SUCCESS;
 }

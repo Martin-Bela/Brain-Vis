@@ -53,8 +53,6 @@ struct NeuronProperties {
     }
 };
 
-constexpr int x = sizeof(NeuronProperties);
-
 static_assert(sizeof(NeuronProperties) == 12 * 4);
 static_assert(offsetof(NeuronProperties, firedFraction) == 4);
 static_assert(std::endian::native == std::endian::little);
