@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vtkNew.h>
 #include <vtkNamedColors.h>
 
