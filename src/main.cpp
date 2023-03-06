@@ -12,6 +12,7 @@
 #include "context.hpp"
 #include "utility.hpp"
 #include "neuronProperties.hpp"
+#include "slider.hpp"
 
 namespace { //anonymous namespace
 
@@ -93,7 +94,7 @@ namespace { //anonymous namespace
     class Visualisation {
     public:
         Context context;
-
+        Slider slider;
 
         void run() {
             vtkNew<vtkSphereSource> sphere;
@@ -121,7 +122,13 @@ namespace { //anonymous namespace
             actor->GetProperty()->SetPointSize(30);
             actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
-            context.addActor(actor);
+            context.init({ actor });
+
+            slider.init(context, [](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
+                //todo add slider functionality
+                std::cout << representation->GetValue() << std::endl;
+                });
+
             context.startRendering();
         }
     };

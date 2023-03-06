@@ -8,7 +8,7 @@ project(Brain-Visualisation)
 
 add_executable(Preprocess "src/preprocess.cpp" "src/neuronProperties.hpp")
 
-add_executable("${PROJECT_NAME}" "src/main.cpp" "src/neuronProperties.hpp" "src/context.hpp" "src/utility.hpp" "src/utility.cpp")
+add_executable("${PROJECT_NAME}" "src/main.cpp" "src/neuronProperties.hpp" "src/context.hpp" "src/utility.hpp" "src/utility.cpp" "src/slider.hpp")
 
 find_package(VTK REQUIRED)
 
