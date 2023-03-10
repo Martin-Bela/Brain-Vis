@@ -100,8 +100,7 @@ namespace { //anonymous namespace
             vtkNew<vtkSphereSource> sphere;
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
-            sphere->SetRadius(.08);
-            sphere->SetRadius(2);
+            sphere->SetRadius(0.5);
 
             auto points = loadPositions();
 
@@ -137,11 +136,11 @@ namespace { //anonymous namespace
 
 
 int main() {
-    if (std::filesystem::current_path().filename().string().starts_with("build")) {
-        // cd ..
-        auto newPath = std::filesystem::current_path().parent_path();
-        std::filesystem::current_path(newPath);
+    std::filesystem::path path = std::filesystem::current_path();
+    while (!path.filename().string().starts_with("brain-visualisation")) {
+        path = path.parent_path();
     }
+    std::filesystem::current_path(path);
     std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
 
     Visualisation visualisation;

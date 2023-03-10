@@ -3,7 +3,8 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>    
-#include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkInteractorStyleTerrain.h>
+
 #include <vtkCamera.h>
 
 #include "utility.hpp"
@@ -12,7 +13,6 @@ class Context{
 public:
     vtkNew<vtkRenderer> renderer;
     vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
-    vtkNew<vtkInteractorStyleTrackballCamera> trackballCamera;
     vtkNew<vtkRenderWindow> renderWindow;
 
     void init(std::vector<vtkActor*> actors) {
@@ -22,22 +22,30 @@ public:
 
         // This starts the event loop and as a side effect causes an initial render.
         renderer->SetBackground(namedColors->GetColor3d("LightYellow").GetData());
-        // Zoom in a little by accessing the camera and invoking its "Zoom" method.
-        renderer->ResetCamera();
-        renderer->GetActiveCamera()->Zoom(1.5);
 
-        renderWindow->AddRenderer(renderer);
+        // Create camera, center it at center of points and setup to be similar to what is used in school
+        vtkCamera* camera = renderer->GetActiveCamera();
+        const double camera_bounds[6] = {0.0, 186.6724687, 0, 146.6490116 , 0, 154.3730879 };
+        renderer->ResetCamera(camera_bounds);
+        camera->Elevation(-90);
+        camera->SetViewUp(0, 0, 1);
+
         // The render window is the actual GUI window
         // that appears on the computer screen
-        renderWindow->SetSize(800, 800);
+        renderWindow->AddRenderer(renderer);
+        const int size = 800;
+        const int ratio = 4.0 / 3.0;
+        renderWindow->SetSize(ratio * size, size);
         renderWindow->SetWindowName("Brain Visualisation");
 
         // The render window interactor captures mouse events
         // and will perform appropriate camera or actor manipulation
         // depending on the nature of the events.
 
-        renderWindowInteractor->SetInteractorStyle(trackballCamera);
+        vtkNew<vtkInteractorStyleTerrain> terrainCamera;
+        renderWindowInteractor->SetInteractorStyle(terrainCamera);
         renderWindowInteractor->SetRenderWindow(renderWindow);
+        renderer->SetNearClippingPlaneTolerance(0.0001);
     }
 
     void startRendering() {
