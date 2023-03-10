@@ -38,7 +38,10 @@ namespace { //anonymous namespace
 
     vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int pointCount) {
         auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
-        std::ifstream in(path);
+        std::ifstream in(path, std::ios::binary);
+        if (!in.good()) {
+            std::cout << "Timestep file couldn't be opened!\n" << std::endl;
+        }
 
         vtkNew<vtkUnsignedCharArray> colors;
         colors->SetName("colors");
@@ -138,7 +141,12 @@ namespace { //anonymous namespace
 int main() {
     std::filesystem::path path = std::filesystem::current_path();
     while (!path.filename().string().starts_with("brain-visualisation")) {
-        path = path.parent_path();
+        auto parent = path.parent_path();
+        if (parent == path) {
+            std::cout << "brain-visualisation directory wasn't found!" << std::endl;
+            return EXIT_FAILURE;
+        }
+        path = std::move(parent);
     }
     std::filesystem::current_path(path);
     std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
