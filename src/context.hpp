@@ -34,7 +34,7 @@ public:
         // that appears on the computer screen
         renderWindow->AddRenderer(renderer);
         const int size = 800;
-        const int ratio = 4.0 / 3.0;
+        const float ratio = 4.0 / 3.0;
         renderWindow->SetSize(ratio * size, size);
         renderWindow->SetWindowName("Brain Visualisation");
 

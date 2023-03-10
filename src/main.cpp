@@ -7,6 +7,11 @@
 #include <vtkDelimitedTextReader.h>
 #include <vtkSphereSource.h>
 #include <vtkGlyph3DMapper.h>
+#include <vtkMutableDirectedGraph.h>
+#include <vtkGraphToPolyData.h>
+#include <vtkGraphLayout.h>
+#include <vtkGraphLayoutView.h>
+#include <vtkArrowSource.h>
 
 
 #include "context.hpp"
@@ -16,7 +21,7 @@
 
 namespace { //anonymous namespace
 
-    vtkNew<vtkPoints> loadPositions() {
+    vtkNew<vtkPoints> loadPositions(vtkNew<vtkMutableDirectedGraph> *g) {
         vtkNew<vtkDelimitedTextReader> reader;
         auto path = (dataFolder / "positions/rank_0_positions.txt").string();
         reader->SetFileName(path.data());
@@ -28,12 +33,33 @@ namespace { //anonymous namespace
         vtkTable* table = reader->GetOutput();
         for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++)
         {
+            if (table->GetValue(i, 0).ToString() == "#") continue;
+
             positions->InsertNextPoint(
                 (table->GetValue(i, 1)).ToDouble(),
                 (table->GetValue(i, 2)).ToDouble(),
                 (table->GetValue(i, 3)).ToDouble());
+            g->GetPointer()->AddVertex();
         }
         return positions;
+    }
+
+
+    void loadEdges(vtkNew<vtkMutableDirectedGraph>* g) {
+        vtkNew<vtkDelimitedTextReader> reader;
+        auto path = (dataFolder / "network/rank_0_step_0_in_network.txt").string();
+        reader->SetFileName(path.data());
+        reader->DetectNumericColumnsOn();
+        reader->SetFieldDelimiterCharacters(" \t");
+        reader->Update();
+
+
+        vtkTable* table = reader->GetOutput();
+        for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++)
+        {
+            if (table->GetValue(i, 0).ToString() == "#") continue;
+            g->GetPointer()->AddEdge(static_cast<vtkIdType>(table->GetValue(i, 3).ToInt()) - 1, static_cast<vtkIdType>(table->GetValue(i, 1).ToInt()) - 1);
+        }
     }
 
     vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int pointCount) {
@@ -105,7 +131,24 @@ namespace { //anonymous namespace
             sphere->SetThetaResolution(10);
             sphere->SetRadius(0.5);
 
-            auto points = loadPositions();
+            vtkNew<vtkMutableDirectedGraph> g;
+            auto points = loadPositions(&g);
+            // Add the coordinates of the points to the graph
+            g->SetPoints(points);
+            loadEdges(&g);
+
+            // Convert the graph to a polydata
+            vtkNew<vtkGraphToPolyData> graphToPolyData;
+            graphToPolyData->SetInputData(g);
+            graphToPolyData->Update();
+
+            // Create a mapper and actor
+            vtkNew<vtkPolyDataMapper> mapper;
+            mapper->SetInputConnection(graphToPolyData->GetOutputPort());
+
+            vtkNew<vtkActor> graphActor;
+            graphActor->SetMapper(mapper);
+
 
             vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
@@ -124,7 +167,7 @@ namespace { //anonymous namespace
             actor->GetProperty()->SetPointSize(30);
             actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
-            context.init({ actor });
+            context.init({ actor, graphActor });
 
             slider.init(context, [](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
                 //todo add slider functionality
