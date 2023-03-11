@@ -12,7 +12,7 @@
 #include <vtkGraphLayout.h>
 #include <vtkGraphLayoutView.h>
 #include <vtkArrowSource.h>
-
+#include <vtkBoostDividedEdgeBundling.h>
 
 #include "context.hpp"
 #include "utility.hpp"
@@ -55,7 +55,7 @@ namespace { //anonymous namespace
 
 
         vtkTable* table = reader->GetOutput();
-        for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++)
+        for (vtkIdType i = 0; i < 10000; i++)
         {
             if (table->GetValue(i, 0).ToString() == "#") continue;
             g->GetPointer()->AddEdge(static_cast<vtkIdType>(table->GetValue(i, 3).ToInt()) - 1, static_cast<vtkIdType>(table->GetValue(i, 1).ToInt()) - 1);
@@ -137,9 +137,12 @@ namespace { //anonymous namespace
             g->SetPoints(points);
             loadEdges(&g);
 
+            vtkNew<vtkBoostDividedEdgeBundling> edgeBundler;
+            edgeBundler->SetInputDataObject(g);
+
             // Convert the graph to a polydata
             vtkNew<vtkGraphToPolyData> graphToPolyData;
-            graphToPolyData->SetInputData(g);
+            graphToPolyData->SetInputConnection(edgeBundler->GetOutputPort());
             graphToPolyData->Update();
 
             // Create a mapper and actor
@@ -148,20 +151,21 @@ namespace { //anonymous namespace
 
             vtkNew<vtkActor> graphActor;
             graphActor->SetMapper(mapper);
+            graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
 
 
             vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
 
-            //auto colors = loadColors(80, points->GetNumberOfPoints());
-            auto colors = colorsFromPositions(*points);
+            auto colors = loadColors(80, points->GetNumberOfPoints());
+            //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
-
+            
             vtkNew<vtkGlyph3DMapper> glyph3D;
             glyph3D->SetInputData(polyData);
             glyph3D->SetSourceConnection(sphere->GetOutputPort());
             glyph3D->Update();
-
+            
             vtkNew<vtkActor> actor;
             actor->SetMapper(glyph3D);
             actor->GetProperty()->SetPointSize(30);
