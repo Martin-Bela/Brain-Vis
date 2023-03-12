@@ -43,7 +43,7 @@ int main() {
         }
 
         for (int out = 0; out < 100/*10'000*/; out++) {
-            std::ofstream out_file(output_path + std::to_string(out), std::ios_base::binary | std::ios_base::app);
+            std::ofstream out_file(output_path + std::to_string(out), std::ios::binary | std::ios::app | std::ios::ate);
             for (int in = 0; in < 50; in++) {
                 auto neuron = NeuronProperties::Parse(in_files[in]);
                 out_file.write(reinterpret_cast<const char*>(&neuron), sizeof(neuron));

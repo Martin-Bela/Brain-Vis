@@ -31,7 +31,8 @@ namespace { //anonymous namespace
 
         vtkNew<vtkPoints> positions;
         vtkTable* table = reader->GetOutput();
-        for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++)
+        //the first row is header
+        for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++)
         {
             if (table->GetValue(i, 0).ToString() == "#") continue;
 
@@ -64,10 +65,15 @@ namespace { //anonymous namespace
 
     vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int pointCount) {
         auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
-        std::ifstream in(path, std::ios::binary);
-        if (!in.good()) {
-            std::cout << "Timestep file couldn't be opened!\n" << std::endl;
+        
+        auto size = std::filesystem::file_size(path);
+        if (size < sizeof(NeuronProperties) * pointCount) {
+            std::cout << "File:\"" << path << "\" is too small.\n";
+            std::cout << sizeof(NeuronProperties) * pointCount << "bytes expected.\n";
         }
+
+        std::ifstream in(path, std::ios::binary);
+        checkFile(in);
 
         vtkNew<vtkUnsignedCharArray> colors;
         colors->SetName("colors");
@@ -76,7 +82,7 @@ namespace { //anonymous namespace
         for (int i = 0; i < pointCount; i++) {
             NeuronProperties neuron{};
             in.read(reinterpret_cast<char*>(&neuron), sizeof(NeuronProperties));
-
+            checkFile(in);
             std::array<unsigned char, 3> color = { 255, 0, 0};
             std::array<unsigned char, 3> color2 = { 0, 255, 0 };
 
@@ -134,6 +140,7 @@ namespace { //anonymous namespace
             vtkNew<vtkMutableDirectedGraph> g;
             auto points = loadPositions(&g);
             // Add the coordinates of the points to the graph
+#if 0
             g->SetPoints(points);
             loadEdges(&g);
 
@@ -152,7 +159,7 @@ namespace { //anonymous namespace
             vtkNew<vtkActor> graphActor;
             graphActor->SetMapper(mapper);
             graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
-
+#endif       
 
             vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
@@ -171,7 +178,7 @@ namespace { //anonymous namespace
             actor->GetProperty()->SetPointSize(30);
             actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
-            context.init({ actor, graphActor });
+            context.init({ actor });
 
             slider.init(context, [](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
                 //todo add slider functionality
