@@ -54,7 +54,7 @@ namespace { //anonymous namespace
 
 
         vtkTable* table = reader->GetOutput();
-        for (vtkIdType i = 0; i < 10000; i++)
+        for (vtkIdType i = 0; i < 1000; i++)
         {
             if (table->GetValue(i, 0).ToString() == "#") continue;
             g.AddEdge(static_cast<vtkIdType>(table->GetValue(i, 3).ToInt()) - 1, static_cast<vtkIdType>(table->GetValue(i, 1).ToInt()) - 1);
@@ -77,13 +77,17 @@ namespace { //anonymous namespace
         colors->SetName("colors");
         colors->SetNumberOfComponents(3);
 
+        auto projection = [](NeuronProperties& prop) {
+            return (float) prop.calcium;
+        };
+
         float mini = INFINITY, maxi = -INFINITY;
         for (int i = 0; i < pointCount; i++) {
             NeuronProperties neuron{};
             in.read(reinterpret_cast<char*>(&neuron), sizeof(NeuronProperties));
             checkFile(in);
-            mini = std::min(neuron.calcium, mini);
-            maxi = std::max(neuron.calcium, maxi);
+            mini = std::min(projection(neuron), mini);
+            maxi = std::max(projection(neuron), maxi);
         }
         in.seekg(0);
 
@@ -94,7 +98,7 @@ namespace { //anonymous namespace
 
             std::array<unsigned char, 3> color = { 255, 255, 255 };
 
-            auto val = (neuron.calcium - mini) / (maxi - mini);
+            auto val = (projection(neuron) - mini) / (maxi - mini);
             val = val * 2 - 1;
 
             if (val > 0) {
@@ -151,13 +155,13 @@ namespace { //anonymous namespace
             vtkNew<vtkSphereSource> sphere;
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
-            sphere->SetRadius(0.5);
+            sphere->SetRadius(0.3);
 
             vtkNew<vtkMutableDirectedGraph> g;
             vtkNew<vtkPoints> points;
             loadPositions(*g, *points);
             // Add the coordinates of the points to the graph
-#if 1
+#if 0
             g->SetPoints(points);
             loadEdges(*g);
 
