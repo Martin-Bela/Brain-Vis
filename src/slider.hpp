@@ -46,7 +46,7 @@ public:
     void init(Context& context, SliderCallback callback) {
         sliderRep->SetMinimumValue(0);
         sliderRep->SetMaximumValue(99);
-        sliderRep->SetValue(80);
+        sliderRep->SetValue(0);
         sliderRep->SetTitleText("Timestep");
 
         // Set color properties:
@@ -82,6 +82,7 @@ public:
 
         //vtkCommand::InteractionEvent
         sliderWidget->AddObserver(vtkCommand::EndInteractionEvent, callbackWrapper);
+        callback(sliderWidget, sliderRep, 0, nullptr);
         callbackWrapper->setFunction(std::move(callback));
     }
 };

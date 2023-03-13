@@ -184,10 +184,6 @@ namespace { //anonymous namespace
 
             vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
-
-            auto colors = loadColors(80, points->GetNumberOfPoints());
-            //auto colors = colorsFromPositions(*points);
-            polyData->GetPointData()->SetScalars(colors);
             
             vtkNew<vtkGlyph3DMapper> glyph3D;
             glyph3D->SetInputData(polyData);
@@ -201,9 +197,12 @@ namespace { //anonymous namespace
 
             context.init({ actor });
 
-            slider.init(context, [](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
+            slider.init(context, [&points, &polyData, &glyph3D](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
                 //todo add slider functionality
-                std::cout << representation->GetValue() << std::endl;
+                auto colors = loadColors(representation->GetValue(), points->GetNumberOfPoints());
+                //auto colors = colorsFromPositions(*points);
+                polyData->GetPointData()->SetScalars(colors);
+                glyph3D->Update();
                 });
 
             context.startRendering();
