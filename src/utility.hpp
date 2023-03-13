@@ -20,7 +20,7 @@ std::array<float, 3> hslToRgb(std::array<float, 3> hsl);
 
 std::array<unsigned char, 3> generateNiceColor();
 
-inline bool checkFile(std::istream& stream) {
+inline void checkFile(std::istream& stream) {
     if (!stream.good()) {
         std::string_view msg;
         if (stream.eof()) {

@@ -21,7 +21,7 @@
 
 namespace { //anonymous namespace
 
-    vtkNew<vtkPoints> loadPositions(vtkNew<vtkMutableDirectedGraph> *g) {
+    void loadPositions(vtkMutableDirectedGraph& g, vtkPoints& positions) {
         vtkNew<vtkDelimitedTextReader> reader;
         auto path = (dataFolder / "positions/rank_0_positions.txt").string();
         reader->SetFileName(path.data());
@@ -29,24 +29,22 @@ namespace { //anonymous namespace
         reader->SetFieldDelimiterCharacters(" ");
         reader->Update();
 
-        vtkNew<vtkPoints> positions;
         vtkTable* table = reader->GetOutput();
         //the first row is header
         for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++)
         {
             if (table->GetValue(i, 0).ToString() == "#") continue;
 
-            positions->InsertNextPoint(
+            positions.InsertNextPoint(
                 (table->GetValue(i, 1)).ToDouble(),
                 (table->GetValue(i, 2)).ToDouble(),
                 (table->GetValue(i, 3)).ToDouble());
-            g->GetPointer()->AddVertex();
+            g.AddVertex();
         }
-        return positions;
     }
 
 
-    void loadEdges(vtkNew<vtkMutableDirectedGraph>* g) {
+    void loadEdges(vtkMutableDirectedGraph& g) {
         vtkNew<vtkDelimitedTextReader> reader;
         auto path = (dataFolder / "network/rank_0_step_0_in_network.txt").string();
         reader->SetFileName(path.data());
@@ -59,7 +57,7 @@ namespace { //anonymous namespace
         for (vtkIdType i = 0; i < 10000; i++)
         {
             if (table->GetValue(i, 0).ToString() == "#") continue;
-            g->GetPointer()->AddEdge(static_cast<vtkIdType>(table->GetValue(i, 3).ToInt()) - 1, static_cast<vtkIdType>(table->GetValue(i, 1).ToInt()) - 1);
+            g.AddEdge(static_cast<vtkIdType>(table->GetValue(i, 3).ToInt()) - 1, static_cast<vtkIdType>(table->GetValue(i, 1).ToInt()) - 1);
         }
     }
 
@@ -79,18 +77,36 @@ namespace { //anonymous namespace
         colors->SetName("colors");
         colors->SetNumberOfComponents(3);
 
+        float mini = INFINITY, maxi = -INFINITY;
         for (int i = 0; i < pointCount; i++) {
             NeuronProperties neuron{};
             in.read(reinterpret_cast<char*>(&neuron), sizeof(NeuronProperties));
             checkFile(in);
-            std::array<unsigned char, 3> color = { 255, 0, 0};
-            std::array<unsigned char, 3> color2 = { 0, 255, 0 };
-
-            colors->InsertNextTypedTuple(neuron.electricActivity > -62 ? color.data() : color2.data());
+            mini = std::min(neuron.calcium, mini);
+            maxi = std::max(neuron.calcium, maxi);
         }
+        in.seekg(0);
 
-        if (!in.good()) {
-            std::cout << "Error reading colors!\n" << std::endl;
+        for (int i = 0; i < pointCount; i++) {
+            NeuronProperties neuron{};
+            in.read(reinterpret_cast<char*>(&neuron), sizeof(NeuronProperties));
+            checkFile(in);
+
+            std::array<unsigned char, 3> color = { 255, 255, 255 };
+
+            auto val = (neuron.calcium - mini) / (maxi - mini);
+            val = val * 2 - 1;
+
+            if (val > 0) {
+                color[1] = 255 - 255 * val;
+                color[2] = color[1];
+            }
+            else {
+                color[1] = 255 - 255 * val;
+                color[0] = color[1];
+            }
+
+            colors->InsertNextTypedTuple(color.data());
         }
 
         return colors;
@@ -138,11 +154,12 @@ namespace { //anonymous namespace
             sphere->SetRadius(0.5);
 
             vtkNew<vtkMutableDirectedGraph> g;
-            auto points = loadPositions(&g);
+            vtkNew<vtkPoints> points;
+            loadPositions(*g, *points);
             // Add the coordinates of the points to the graph
-#if 0
+#if 1
             g->SetPoints(points);
-            loadEdges(&g);
+            loadEdges(*g);
 
             vtkNew<vtkBoostDividedEdgeBundling> edgeBundler;
             edgeBundler->SetInputDataObject(g);
