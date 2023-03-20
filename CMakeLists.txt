@@ -6,9 +6,12 @@ set (CMAKE_CXX_STANDARD 20)
 
 project(Brain-Visualisation)
 
-add_executable(Preprocess "src/preprocess.cpp" "src/neuronProperties.hpp")
+include_directories("src")
 
-add_executable("${PROJECT_NAME}" "src/main.cpp" "src/neuronProperties.hpp" "src/context.hpp" "src/utility.hpp" "src/utility.cpp" "src/slider.hpp")
+add_executable(PreprocessNeuronProperties "src/preprocessNeuronProperties/preprocessNeuronProperties.cpp" "src/neuronProperties.hpp")
+
+add_executable("${PROJECT_NAME}" "src/vis/main.cpp" "src/vis/context.hpp" "src/vis/utility.hpp" "src/vis/utility.cpp" "src/vis/slider.hpp"
+	"src/neuronProperties.hpp")
 
 find_package(VTK REQUIRED)
 
