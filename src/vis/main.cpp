@@ -18,6 +18,7 @@
 #include "visUtility.hpp"
 #include "neuronProperties.hpp"
 #include "slider.hpp"
+#include "edge.hpp"
 
 namespace { //anonymous namespace
 
@@ -43,20 +44,18 @@ namespace { //anonymous namespace
 
 
     void loadEdges(vtkMutableDirectedGraph& g) {
-        vtkNew<vtkDelimitedTextReader> reader;
-        auto path = (dataFolder / "network/rank_0_step_0_in_network.txt").string();
-        reader->SetFileName(path.data());
-        reader->DetectNumericColumnsOn();
-        reader->SetFieldDelimiterCharacters(" \t");
-        reader->Update();
+        auto path = (dataFolder / "network-bin/rank_0_step_0_in_network").string();
+        std::ifstream file(path, std::ios::binary);
+        checkFile(file);
 
-
-        vtkTable* table = reader->GetOutput();
-        for (vtkIdType i = 0; i < 1000; i++)
-        {
-            if (table->GetValue(i, 0).ToString() == "#") continue;
-            g.AddEdge(static_cast<vtkIdType>(table->GetValue(i, 3).ToInt()) - 1, static_cast<vtkIdType>(table->GetValue(i, 1).ToInt()) - 1);
+        for (unsigned i = 0; i < std::filesystem::file_size(path) / sizeof(Edge); i++) {
+            Edge edge;
+            file.read(reinterpret_cast<char*>(&edge), sizeof(edge));
+            
+            g.AddEdge(edge.from, edge.to);
+            //checkFile(file);
         }
+        checkFile(file);
     }
 
     vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int pointCount) {
@@ -155,7 +154,6 @@ namespace { //anonymous namespace
             sphere->SetThetaResolution(10);
             sphere->SetRadius(0.3);
 
-            vtkNew<vtkMutableDirectedGraph> g;
             vtkNew<vtkPoints> points;
             loadPositions(*points);
             // Add the coordinates of the points to the graph
