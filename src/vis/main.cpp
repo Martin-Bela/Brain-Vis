@@ -15,13 +15,13 @@
 #include <vtkBoostDividedEdgeBundling.h>
 
 #include "context.hpp"
-#include "utility.hpp"
+#include "visUtility.hpp"
 #include "neuronProperties.hpp"
 #include "slider.hpp"
 
 namespace { //anonymous namespace
 
-    void loadPositions(vtkMutableDirectedGraph& g, vtkPoints& positions) {
+    void loadPositions(vtkPoints& positions) {
         vtkNew<vtkDelimitedTextReader> reader;
         auto path = (dataFolder / "positions/rank_0_positions.txt").string();
         reader->SetFileName(path.data());
@@ -31,15 +31,13 @@ namespace { //anonymous namespace
 
         vtkTable* table = reader->GetOutput();
         //the first row is header
-        for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++)
-        {
+        for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
             if (table->GetValue(i, 0).ToString() == "#") continue;
 
             positions.InsertNextPoint(
                 (table->GetValue(i, 1)).ToDouble(),
                 (table->GetValue(i, 2)).ToDouble(),
                 (table->GetValue(i, 3)).ToDouble());
-            g.AddVertex();
         }
     }
 
@@ -159,9 +157,11 @@ namespace { //anonymous namespace
 
             vtkNew<vtkMutableDirectedGraph> g;
             vtkNew<vtkPoints> points;
-            loadPositions(*g, *points);
+            loadPositions(*points);
             // Add the coordinates of the points to the graph
 #if 0
+            vtkNew<vtkMutableDirectedGraph> g;
+            g->SetNumberOfVertices(points->GetNumberOfPoints());
             g->SetPoints(points);
             loadEdges(*g);
 
@@ -170,7 +170,8 @@ namespace { //anonymous namespace
 
             // Convert the graph to a polydata
             vtkNew<vtkGraphToPolyData> graphToPolyData;
-            graphToPolyData->SetInputConnection(edgeBundler->GetOutputPort());
+            graphToPolyData->SetInputDataObject(g);
+            //graphToPolyData->SetInputConnection(edgeBundler->GetOutputPort());
             graphToPolyData->Update();
 
             // Create a mapper and actor
@@ -213,17 +214,7 @@ namespace { //anonymous namespace
 
 
 int main() {
-    std::filesystem::path path = std::filesystem::current_path();
-    while (!path.filename().string().starts_with("brain-visualisation")) {
-        auto parent = path.parent_path();
-        if (parent == path) {
-            std::cout << "brain-visualisation directory wasn't found!" << std::endl;
-            return EXIT_FAILURE;
-        }
-        path = std::move(parent);
-    }
-    std::filesystem::current_path(path);
-    std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
+    set_current_directory();
 
     Visualisation visualisation;
     visualisation.run();

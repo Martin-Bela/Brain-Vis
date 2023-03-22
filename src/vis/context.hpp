@@ -7,7 +7,7 @@
 
 #include <vtkCamera.h>
 
-#include "utility.hpp"
+#include "visUtility.hpp"
 
 class Context{
 public:

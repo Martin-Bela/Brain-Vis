@@ -8,14 +8,18 @@ project(Brain-Visualisation)
 
 include_directories("src")
 
-add_executable(PreprocessNeuronProperties "src/preprocessNeuronProperties/preprocessNeuronProperties.cpp" "src/neuronProperties.hpp")
+find_package(VTK REQUIRED)
 
-add_executable("${PROJECT_NAME}" "src/vis/main.cpp" "src/vis/context.hpp" "src/vis/utility.hpp" "src/vis/utility.cpp" "src/vis/slider.hpp"
-	"src/neuronProperties.hpp")
+# Neuron properties preprocessing
+add_executable(PreprocessNeuronProperties "src/utility.hpp" "src/preprocessNeuronProperties/preprocessNeuronProperties.cpp" "src/neuronProperties.hpp")
 
 find_package(VTK REQUIRED)
 
+# Brain visualisation
+file(GLOB VIS_FILES CONFIGURE_DEPENDS "src/vis/*")
+add_executable("${PROJECT_NAME}" ${VIS_FILES} "src/utility.hpp" "src/neuronProperties.hpp")
 target_link_libraries("${PROJECT_NAME}" PRIVATE ${VTK_LIBRARIES})
+
 
 vtk_module_autoinit(
   TARGETS "${PROJECT_NAME}"

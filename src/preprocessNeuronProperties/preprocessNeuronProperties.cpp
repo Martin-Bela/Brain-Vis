@@ -4,25 +4,15 @@
 #include <fstream>
 #include <ranges>
 
+#include "utility.hpp"
 #include "neuronProperties.hpp"
 
-std::filesystem::path dataFolder = "data/viz-calcium";
-
 int main() {
-    using namespace std::chrono;
-    std::cout << "Write \"yes\" if you want to remove all files in monitors-bin and begin preprocessing." << std::endl;
-    std::string str;
-    std::getline(std::cin, str);
-    if (str != "yes") {
-        return 0;
-    }
+    set_current_directory();
 
-    if (std::filesystem::current_path().filename().string().starts_with("build")) {
-        // cd ..
-        auto newPath = std::filesystem::current_path().parent_path();
-        std::filesystem::current_path(newPath);
-    }
-    std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
+    confirm_operation("Write \"yes\" if you want to remove all files in monitors-bin and begin preprocessing.");
+
+    using namespace std::chrono;
 
     std::filesystem::remove_all(dataFolder / "monitors-bin");
     if (!std::filesystem::create_directory(dataFolder / "monitors-bin")) {

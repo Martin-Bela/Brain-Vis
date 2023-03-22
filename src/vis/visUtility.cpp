@@ -1,8 +1,6 @@
-#include "utility.hpp"
+#include "visUtility.hpp"
 
 std::mt19937 rand_gen(time(0));
-
-std::filesystem::path dataFolder = "./data/viz-calcium";
 
 vtkNew<vtkNamedColors> namedColors;
 
