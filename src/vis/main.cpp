@@ -22,39 +22,74 @@
 
 namespace { //anonymous namespace
 
-    void loadPositions(vtkPoints& positions) {
+    double manhattan_dist(double* x, double* y) {
+        double dx = x[0] - y[0];
+        double dy = x[1] - y[1];
+        double dz = x[2] - y[2];
+        return abs(dx) + abs(dy) + abs(dz);
+    };
+
+    std::map<int, int> loadPositions(vtkPoints& positions) {
         vtkNew<vtkDelimitedTextReader> reader;
-        auto path = (dataFolder / "positions/rank_0_positions.txt").string();
+        std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
         reader->SetFileName(path.data());
         reader->DetectNumericColumnsOn();
         reader->SetFieldDelimiterCharacters(" ");
         reader->Update();
 
+        int point_index = -1;
+        std::map<int, int> map;
         vtkTable* table = reader->GetOutput();
         //the first row is header
         for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
             if (table->GetValue(i, 0).ToString() == "#") continue;
 
-            positions.InsertNextPoint(
-                (table->GetValue(i, 1)).ToDouble(),
-                (table->GetValue(i, 2)).ToDouble(),
-                (table->GetValue(i, 3)).ToDouble());
+            double point[] = {
+                 (table->GetValue(i, 1)).ToDouble(),
+                 (table->GetValue(i, 2)).ToDouble(),
+                 (table->GetValue(i, 3)).ToDouble()
+            };
+
+            if (point_index == -1 || manhattan_dist(positions.GetPoint(point_index), point) > 0.5) {
+                positions.InsertNextPoint(point);
+                point_index++;
+            }
+            map[(table->GetValue(i, 0)).ToInt() - 1] = point_index;
         }
+        return map;
     }
 
 
-    void loadEdges(vtkMutableDirectedGraph& g) {
+    void loadEdges(vtkMutableDirectedGraph& g, std::map<int, int> map) {
         auto path = (dataFolder / "network-bin/rank_0_step_0_in_network").string();
         std::ifstream file(path, std::ios::binary);
         checkFile(file);
 
+        int edge_n = 0;
+        std::map<int, int> edge_count;
+        std::vector<int> edges;
         for (unsigned i = 0; i < std::filesystem::file_size(path) / sizeof(Edge); i++) {
             Edge edge;
             file.read(reinterpret_cast<char*>(&edge), sizeof(edge));
-            
-            g.AddEdge(edge.from, edge.to);
+
+            if (edge_count.contains(10000 * map[edge.from] + map[edge.to])) {
+                edge_count[10000 * map[edge.from] + map[edge.to]]++;
+            }
+            else {
+                edges.push_back(10000 * map[edge.from] + map[edge.to]);
+                edge_count[10000 * map[edge.from] + map[edge.to]] = 1;
+            }
             //checkFile(file);
         }
+
+        for (int val : edges) {
+            if (edge_count[val] >= 3) {
+                g.AddEdge(val / 10000, val % 10000);
+                edge_n++;
+            }
+        }
+
+        cout << edge_n << endl;
         checkFile(file);
     }
 
@@ -125,7 +160,7 @@ namespace { //anonymous namespace
 
             return abs(dx) + abs(dy) + abs(dz);
         };
-        
+
         std::array<float, 3> prev_point{};
         auto color = generateNiceColor();
 
@@ -155,7 +190,7 @@ namespace { //anonymous namespace
             sphere->SetRadius(0.3);
 
             vtkNew<vtkPoints> points;
-            loadPositions(*points);
+            std::map<int, int> point_map = loadPositions(*points);
             // Add the coordinates of the points to the graph
 #if 0
             vtkNew<vtkMutableDirectedGraph> g;
@@ -181,6 +216,56 @@ namespace { //anonymous namespace
             graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
 #endif       
 
+            vtkNew<vtkMutableDirectedGraph> g;
+            // Add the coordinates of the points to the graph
+            g->SetPoints(points);
+            // TODO: Fix! This is terrible
+            for (int i = 0; i < points->GetNumberOfPoints(); i++) {
+                g->AddVertex();
+            }
+            loadEdges(*g, point_map);
+
+           
+            //edge_layout = vtkEdgeLayout();
+            //edge_layout.SetLayoutStrategy(edge_strategy);
+            //edge_layout.SetInputConnection(layout.GetOutputPort())
+
+
+            // Convert the graph to a polydata
+            vtkNew<vtkGraphToPolyData> graphToPolyData;
+            graphToPolyData->SetInputData(g);
+            graphToPolyData->EdgeGlyphOutputOn();
+            graphToPolyData->SetEdgeGlyphPosition(0.98);
+            graphToPolyData->Update();
+
+            // Make a simple edge arrow for glyphing.
+            vtkNew<vtkArrowSource> arrowSource;
+            arrowSource->SetShaftRadius(0.075);
+            arrowSource->SetTipRadius(0.15);
+            arrowSource->Update();
+
+            // Use Glyph3D to repeat the glyph on all edges.
+            vtkNew<vtkGlyph3D> arrowGlyph;
+            arrowGlyph->SetSourceConnection(arrowSource->GetOutputPort());
+            arrowGlyph->SetInputConnection(0, graphToPolyData->GetOutputPort(1));
+            arrowGlyph->SetInputConnection(1, arrowSource->GetOutputPort());
+            arrowGlyph->SetInputData(graphToPolyData->GetOutput());
+
+            // Add the edge arrow actor to the view.
+            vtkNew<vtkPolyDataMapper> arrowMapper;
+            arrowMapper->SetInputConnection(arrowGlyph->GetOutputPort());
+            vtkNew<vtkActor> arrowActor;
+            arrowActor->SetMapper(arrowMapper);
+            arrowActor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
+
+            // Create a mapper and actor
+            vtkNew<vtkPolyDataMapper> mapper;
+            mapper->SetInputConnection(graphToPolyData->GetOutputPort());
+
+            vtkNew<vtkActor> graphActor;
+            graphActor->SetMapper(mapper);
+
+
             vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
             
@@ -194,12 +279,12 @@ namespace { //anonymous namespace
             actor->GetProperty()->SetPointSize(30);
             actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
-            context.init({ actor });
+            context.init({ actor, graphActor });
 
             slider.init(context, [&points, &polyData, &glyph3D](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
                 //todo add slider functionality
-                auto colors = loadColors(representation->GetValue(), points->GetNumberOfPoints());
-                //auto colors = colorsFromPositions(*points);
+                //auto colors = loadColors(representation->GetValue(), points->GetNumberOfPoints());
+                auto colors = colorsFromPositions(*points);
                 polyData->GetPointData()->SetScalars(colors);
                 glyph3D->Update();
                 });
