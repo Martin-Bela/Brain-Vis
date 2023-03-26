@@ -62,6 +62,42 @@ namespace { //anonymous namespace
         return map;
     }
 
+    void loadEdgesInefficient(vtkMutableDirectedGraph& g, std::map<int, int> map, int step) {
+        auto path = (dataFolder.string() + "/network/rank_0_step_" + std::to_string(step) + "_in_network.txt");
+        vtkNew<vtkDelimitedTextReader> reader;
+        reader->SetFileName(path.data());
+        reader->DetectNumericColumnsOn();
+        reader->SetFieldDelimiterCharacters(" \t");
+        reader->Update();
+
+        int edge_n = 0;
+        std::map<int, int> edge_count;
+        std::vector<int> edges;
+        vtkTable* table = reader->GetOutput();
+        for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
+            if (table->GetValue(i, 0).ToString() == "#") continue;
+
+            int from = static_cast<uint16_t>(table->GetValue(i, 1).ToInt() - 1);
+            int to = static_cast<uint16_t>(table->GetValue(i, 3).ToInt() - 1);
+
+            if (edge_count.contains(10000 * map[from] + map[to])) {
+                edge_count[10000 * map[from] + map[to]]++;
+            }
+            else {
+                edges.push_back(10000 * map[from] + map[to]);
+                edge_count[10000 * map[from] + map[to]] = 1;
+            }
+        }
+
+        for (int val : edges) {
+            if (edge_count[val] >= 5) {
+                g.AddEdge(val / 10000, val % 10000);
+                edge_n++;
+            }
+        }
+
+        cout << edge_n << endl;
+    }
 
     void loadEdges(vtkMutableDirectedGraph& g, std::map<int, int> map) {
         auto path = (dataFolder / "network-bin/rank_0_step_0_in_network").string();
@@ -96,8 +132,67 @@ namespace { //anonymous namespace
         checkFile(file);
     }
 
-    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int pointCount) {
-        auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
+    vtkNew<vtkUnsignedCharArray> loadColorsInefficient(int timestep) {
+        const int pointCount = 5000;
+        std::string path;
+        if (timestep == 0) {
+            path = (dataFolder / "monitors2/monitors_0.csv").string();
+        }
+        else {
+            path = (dataFolder / "monitors2/monitors_").string() + std::to_string(timestep) + "0000.csv";
+        }
+
+        vtkNew<vtkDelimitedTextReader> reader;
+        reader->SetFileName(path.data());
+        reader->DetectNumericColumnsOn();
+        reader->SetFieldDelimiterCharacters(";");
+        reader->Update();
+
+        vtkNew<vtkUnsignedCharArray> colors;
+        colors->SetName("colors");
+        colors->SetNumberOfComponents(3);
+        
+        std::vector<double> values;
+        vtkTable* table = reader->GetOutput();
+        auto projection = [](vtkTable* table, int attr, int i) {
+            return (table->GetValue(i, attr)).ToDouble();
+        };
+
+        for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++) {
+            values.push_back(projection(table, 3, i));
+        }
+
+        double mini = 0, maxi = 0.0;
+        
+        double avg = 0;
+        for (int i = 0; i < pointCount; i++) {
+            //mini = std::min(values[i], mini);
+            maxi = std::max(values[i], maxi);
+            avg += values[i];
+        }
+
+        for (int i = 0; i < pointCount; i++) {
+            std::array<unsigned char, 3> color = { 255, 255, 255 };         
+            auto val = (values[i] - mini) / (maxi - mini);
+            val = val * 2 - 1;
+
+            if (val > 0) {
+                color[1] = 255 - 255 * val;
+                color[2] = color[1];
+            }
+            else {
+                color[1] = 255 + 255 * val;
+                color[0] = color[1];
+            }
+            
+            colors->InsertNextTypedTuple(color.data());
+        }
+        return colors;
+    }
+
+    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, std::map<int, int> map) {
+        const int pointCount = 50000;
+        auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(100 * timestep);
         
         auto size = std::filesystem::file_size(path);
         if (size < sizeof(NeuronProperties) * pointCount) {
@@ -131,6 +226,7 @@ namespace { //anonymous namespace
             in.read(reinterpret_cast<char*>(&neuron), sizeof(NeuronProperties));
             checkFile(in);
 
+            if (i == 0 || map[i] == map[i - 1]) continue;
             std::array<unsigned char, 3> color = { 255, 255, 255 };
 
             auto val = (projection(neuron) - mini) / (maxi - mini);
@@ -190,7 +286,7 @@ namespace { //anonymous namespace
             vtkNew<vtkSphereSource> sphere;
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
-            sphere->SetRadius(0.3);
+            sphere->SetRadius(0.6);
 
             vtkNew<vtkPoints> points;
             std::map<int, int> point_map = loadPositions(*points);
@@ -226,8 +322,8 @@ namespace { //anonymous namespace
             for (int i = 0; i < points->GetNumberOfPoints(); i++) {
                 g->AddVertex();
             }
-            loadEdges(*g, point_map);
-
+            loadEdgesInefficient(*g, point_map, 0);
+            
 
             vtkNew<vtkGraphLayout> layout;
             vtkNew<vtkPassThroughLayoutStrategy> strategy;
@@ -265,6 +361,7 @@ namespace { //anonymous namespace
             arrowActor->SetMapper(arrowMapper);
             arrowActor->GetProperty()->SetOpacity(0.75);
             arrowActor->GetProperty()->SetColor(namedColors->GetColor3d("DarkGray").GetData());
+            
 
             vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
@@ -281,10 +378,10 @@ namespace { //anonymous namespace
 
             context.init({ actor, arrowActor });
 
-            slider.init(context, [&points, &polyData, &glyph3D](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
+            slider.init(context, [&points, &polyData, &glyph3D, &point_map](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
                 //todo add slider functionality
-                //auto colors = loadColors(representation->GetValue(), points->GetNumberOfPoints());
-                auto colors = colorsFromPositions(*points);
+                auto colors = loadColorsInefficient((int) representation->GetValue());
+                //auto colors = colorsFromPositions(*points);
                 polyData->GetPointData()->SetScalars(colors);
                 glyph3D->Update();
                 });
