@@ -13,6 +13,9 @@
 #include <vtkGraphLayoutView.h>
 #include <vtkArrowSource.h>
 #include <vtkBoostDividedEdgeBundling.h>
+#include <vtkPassThroughEdgeStrategy.h>
+#include <vtkPassThroughLayoutStrategy.h>
+#include <vtkEdgeLayout.h>
 
 #include "context.hpp"
 #include "visUtility.hpp"
@@ -83,7 +86,7 @@ namespace { //anonymous namespace
         }
 
         for (int val : edges) {
-            if (edge_count[val] >= 3) {
+            if (edge_count[val] >= 5) {
                 g.AddEdge(val / 10000, val % 10000);
                 edge_n++;
             }
@@ -225,46 +228,43 @@ namespace { //anonymous namespace
             }
             loadEdges(*g, point_map);
 
-           
-            //edge_layout = vtkEdgeLayout();
-            //edge_layout.SetLayoutStrategy(edge_strategy);
-            //edge_layout.SetInputConnection(layout.GetOutputPort())
 
+            vtkNew<vtkGraphLayout> layout;
+            vtkNew<vtkPassThroughLayoutStrategy> strategy;
+            layout->SetInputData(g);
+            layout->SetLayoutStrategy(strategy);
+
+            vtkNew<vtkPassThroughEdgeStrategy> edge_strategy;
+            vtkNew<vtkEdgeLayout> edge_layout;
+            edge_layout->SetLayoutStrategy(edge_strategy);
+            edge_layout->SetInputConnection(layout->GetOutputPort());
 
             // Convert the graph to a polydata
             vtkNew<vtkGraphToPolyData> graphToPolyData;
-            graphToPolyData->SetInputData(g);
+            graphToPolyData->SetInputConnection(edge_layout->GetOutputPort());
             graphToPolyData->EdgeGlyphOutputOn();
-            graphToPolyData->SetEdgeGlyphPosition(0.98);
+            graphToPolyData->SetEdgeGlyphPosition(0.0);
             graphToPolyData->Update();
 
             // Make a simple edge arrow for glyphing.
             vtkNew<vtkArrowSource> arrowSource;
-            arrowSource->SetShaftRadius(0.075);
-            arrowSource->SetTipRadius(0.15);
+            arrowSource->SetShaftRadius(0.01);
+            arrowSource->SetTipRadius(0.02);
             arrowSource->Update();
 
             // Use Glyph3D to repeat the glyph on all edges.
             vtkNew<vtkGlyph3D> arrowGlyph;
             arrowGlyph->SetSourceConnection(arrowSource->GetOutputPort());
             arrowGlyph->SetInputConnection(0, graphToPolyData->GetOutputPort(1));
-            arrowGlyph->SetInputConnection(1, arrowSource->GetOutputPort());
-            arrowGlyph->SetInputData(graphToPolyData->GetOutput());
+            arrowGlyph->SetScaleModeToScaleByVector();
 
             // Add the edge arrow actor to the view.
             vtkNew<vtkPolyDataMapper> arrowMapper;
             arrowMapper->SetInputConnection(arrowGlyph->GetOutputPort());
             vtkNew<vtkActor> arrowActor;
             arrowActor->SetMapper(arrowMapper);
-            arrowActor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
-
-            // Create a mapper and actor
-            vtkNew<vtkPolyDataMapper> mapper;
-            mapper->SetInputConnection(graphToPolyData->GetOutputPort());
-
-            vtkNew<vtkActor> graphActor;
-            graphActor->SetMapper(mapper);
-
+            arrowActor->GetProperty()->SetOpacity(0.75);
+            arrowActor->GetProperty()->SetColor(namedColors->GetColor3d("DarkGray").GetData());
 
             vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
@@ -279,7 +279,7 @@ namespace { //anonymous namespace
             actor->GetProperty()->SetPointSize(30);
             actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
-            context.init({ actor, graphActor });
+            context.init({ actor, arrowActor });
 
             slider.init(context, [&points, &polyData, &glyph3D](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
                 //todo add slider functionality
