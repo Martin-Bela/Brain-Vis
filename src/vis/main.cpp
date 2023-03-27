@@ -62,7 +62,7 @@ namespace { //anonymous namespace
         return map;
     }
 
-    void loadEdgesInefficient(vtkMutableDirectedGraph& g, std::map<int, int> map, int step) {
+    void loadEdgesInefficient(vtkMutableDirectedGraph& g, const std::map<int, int>& map, int step) {
         auto path = (dataFolder.string() + "/network/rank_0_step_" + std::to_string(step) + "_in_network.txt");
         vtkNew<vtkDelimitedTextReader> reader;
         reader->SetFileName(path.data());
@@ -72,7 +72,7 @@ namespace { //anonymous namespace
 
         int edge_n = 0;
         std::map<int, int> edge_count;
-        std::vector<int> edges;
+
         vtkTable* table = reader->GetOutput();
         for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
             if (table->GetValue(i, 0).ToString() == "#") continue;
@@ -80,17 +80,11 @@ namespace { //anonymous namespace
             int from = static_cast<uint16_t>(table->GetValue(i, 1).ToInt() - 1);
             int to = static_cast<uint16_t>(table->GetValue(i, 3).ToInt() - 1);
 
-            if (edge_count.contains(10000 * map[from] + map[to])) {
-                edge_count[10000 * map[from] + map[to]]++;
-            }
-            else {
-                edges.push_back(10000 * map[from] + map[to]);
-                edge_count[10000 * map[from] + map[to]] = 1;
-            }
+            edge_count[10000 * map.at(from) + map.at(to)]++;
         }
 
-        for (int val : edges) {
-            if (edge_count[val] >= 5) {
+        for (auto&[val, count] : edge_count) {
+            if (count >= 5) {
                 g.AddEdge(val / 10000, val % 10000);
                 edge_n++;
             }
@@ -153,13 +147,15 @@ namespace { //anonymous namespace
         colors->SetNumberOfComponents(3);
         
         std::vector<double> values;
+
         vtkTable* table = reader->GetOutput();
         auto projection = [](vtkTable* table, int attr, int i) {
             return (table->GetValue(i, attr)).ToDouble();
         };
 
+        values.reserve(table->GetNumberOfRows());
         for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++) {
-            values.push_back(projection(table, 3, i));
+            values.push_back(projection(table, 2, i));
         }
 
         double mini = 0, maxi = 0.0;
@@ -176,6 +172,7 @@ namespace { //anonymous namespace
             auto val = (values[i] - mini) / (maxi - mini);
             val = val * 2 - 1;
 
+            
             if (val > 0) {
                 color[1] = 255 - 255 * val;
                 color[2] = color[1];
@@ -184,6 +181,16 @@ namespace { //anonymous namespace
                 color[1] = 255 + 255 * val;
                 color[0] = color[1];
             }
+            
+
+            /*if (values[i] > 0.5) {
+                color[1] = 0;
+                color[2] = 0;
+            }
+            else {
+                color[1] = 0;
+                color[0] = 0;
+            }*/
             
             colors->InsertNextTypedTuple(color.data());
         }

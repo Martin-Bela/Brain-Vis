@@ -45,7 +45,7 @@ class Slider {
 public:
     void init(Context& context, SliderCallback callback) {
         sliderRep->SetMinimumValue(0);
-        sliderRep->SetMaximumValue(99);
+        sliderRep->SetMaximumValue(999);
         sliderRep->SetValue(0);
         sliderRep->SetTitleText("Timestep");
 
@@ -77,7 +77,7 @@ public:
 
         sliderWidget->SetInteractor(context.renderWindowInteractor);
         sliderWidget->SetRepresentation(sliderRep);
-        //sliderWidget->SetAnimationModeToAnimate();
+        sliderWidget->SetAnimationModeToAnimate();
         sliderWidget->EnabledOn();
 
         //vtkCommand::InteractionEvent
