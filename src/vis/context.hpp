@@ -1,9 +1,7 @@
 #pragma once
 
 #include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>    
-#include <vtkInteractorStyleTerrain.h>
 
 #include <vtkCamera.h>
 
@@ -12,7 +10,6 @@
 class Context{
 public:
     vtkNew<vtkRenderer> renderer;
-    vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
 
     void init(std::vector<vtkActor*> actors) {
@@ -33,23 +30,6 @@ public:
         // The render window is the actual GUI window
         // that appears on the computer screen
         renderWindow->AddRenderer(renderer);
-        const int size = 800;
-        const float ratio = 4.0 / 3.0;
-        //renderWindow->SetSize(ratio * size, size);
-        //renderWindow->SetWindowName("Brain Visualisation");
-
-        // The render window interactor captures mouse events
-        // and will perform appropriate camera or actor manipulation
-        // depending on the nature of the events.
-
-        //vtkNew<vtkInteractorStyleTerrain> terrainCamera;
-        //renderWindowInteractor->SetInteractorStyle(terrainCamera);
-        //renderWindowInteractor->SetRenderWindow(renderWindow);
-        renderer->SetNearClippingPlaneTolerance(0.0001);
-    }
-
-    void startRendering() {
-        renderWindow->Render();
-        renderWindowInteractor->Start();
+            
     }
 };

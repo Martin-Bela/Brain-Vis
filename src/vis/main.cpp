@@ -25,6 +25,7 @@
 #include <QMainWindow>
 #include <QPointer>
 #include <QPushButton>
+#include <QSlider>
 
 #include "context.hpp"
 #include "visUtility.hpp"
@@ -33,6 +34,7 @@
 #include "edge.hpp"
 
 #include <optional>
+
 
 namespace { //anonymous namespace
 
@@ -345,19 +347,20 @@ namespace { //anonymous namespace
         return colors;
     }
 
-    class Visualisation {
+    class Visualisation : public QObject {
     public:
         Context context;
-        Slider slider;
-
+        vtkNew<vtkSphereSource> sphere;
+        vtkNew<vtkPoints> points;
+        vtkNew<vtkPolyData> polyData;
+        vtkNew<vtkGlyph3DMapper> glyph3D;
+        vtkNew<vtkActor> actor;
 
         void loadData() {
-            vtkNew<vtkSphereSource> sphere;
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
             sphere->SetRadius(0.6);
 
-            vtkNew<vtkPoints> points;
             std::map<int, int> point_map = loadPositions(*points);
             // Add the coordinates of the points to the graph
 #if 0
@@ -384,6 +387,8 @@ namespace { //anonymous namespace
             graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
 #endif       
 
+            vtkNew<vtkActor> arrowActor;
+#if 0
             vtkNew<vtkMutableDirectedGraph> g;
             // Add the coordinates of the points to the graph
             g->SetPoints(points);
@@ -425,40 +430,42 @@ namespace { //anonymous namespace
             // Add the edge arrow actor to the view.
             vtkNew<vtkPolyDataMapper> arrowMapper;
             arrowMapper->SetInputConnection(arrowGlyph->GetOutputPort());
-            vtkNew<vtkActor> arrowActor;
+            
             arrowActor->SetMapper(arrowMapper);
             arrowActor->GetProperty()->SetOpacity(0.75);
             arrowActor->GetProperty()->SetColor(namedColors->GetColor3d("DarkGray").GetData());
-            
+#endif
 
-            vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
             
-            vtkNew<vtkGlyph3DMapper> glyph3D;
             glyph3D->SetInputData(polyData);
             glyph3D->SetSourceConnection(sphere->GetOutputPort());
             glyph3D->Update();
             
-            vtkNew<vtkActor> actor;
             actor->SetMapper(glyph3D);
             actor->GetProperty()->SetPointSize(30);
             actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
             context.init({ actor, arrowActor });
+        }
 
-            slider.init(context, [&points, &polyData, &glyph3D, &point_map](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
-                //todo add slider functionality
-                auto colors = loadColorsInefficient((int) representation->GetValue());
-                //auto colors = colorsFromPositions(*points);
-                polyData->GetPointData()->SetScalars(colors);
-                glyph3D->Update();
-                });
+        void firstRender() {
+            loadColors(0);
+        }
+
+    public slots:
+        void loadColors(int timestep) {
+            auto colors = loadColorsInefficient(timestep);
+            //auto colors = colorsFromPositions(*points);
+            polyData->GetPointData()->SetScalars(colors);
+            glyph3D->Update();
+            context.renderWindow->Render();
         }
     };
 
     class WidgetPanel {
     public:
-        WidgetPanel(QMainWindow& window) {
+        WidgetPanel(QMainWindow& window, Visualisation& vis) {
             // control area
             window.addDockWidget(Qt::LeftDockWidgetArea, &controlDock);
             controlDockTitle.setMargin(20);
@@ -470,6 +477,9 @@ namespace { //anonymous namespace
 
             randomizeButton.setText("Randomize");
             dockLayout->addWidget(&randomizeButton);
+
+            dockLayout->addWidget(&slider);
+            QObject::connect(&slider, &QSlider::valueChanged, &vis, &Visualisation::loadColors);
         }
 
         QDockWidget controlDock;
@@ -477,6 +487,7 @@ namespace { //anonymous namespace
         QPointer<QVBoxLayout> dockLayout;
         QWidget layoutContainer;
         QPushButton randomizeButton;
+        QSlider slider;
     };
 
     class Application {
@@ -495,15 +506,14 @@ namespace { //anonymous namespace
             vtkWidget.init();
             vtkWidget->setRenderWindow(visualisation->context.renderWindow);
             mainWindow->setCentralWidget(vtkWidget.ptr());
-            std::optional<int> i;
             
-            widgetPanel.init(mainWindow);
+            widgetPanel.init(mainWindow, visualisation);
         }
 
         int run() {
             mainWindow->show();
 
-            visualisation->context.renderWindow->Render();
+            visualisation->firstRender();
 
             return application->exec();
         }
