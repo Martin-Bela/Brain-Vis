@@ -24,8 +24,9 @@ inline bool confirm_operation(const char* msg){
     std::string str;
     std::getline(std::cin, str);
     if (str != "yes") {
-        return 0;
+        return true;
     }
+    return false;
 }
 
 inline void checkFile(std::istream& stream) {

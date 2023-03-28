@@ -12,16 +12,27 @@
 #include <vtkGraphLayout.h>
 #include <vtkGraphLayoutView.h>
 #include <vtkArrowSource.h>
-#include <vtkBoostDividedEdgeBundling.h>
 #include <vtkPassThroughEdgeStrategy.h>
 #include <vtkPassThroughLayoutStrategy.h>
 #include <vtkEdgeLayout.h>
+#include <QVBoxLayout>
+#include <QVTKOpenGLNativeWidget.h>
+
+#include <QApplication>
+#include <QDockWidget>
+#include <QGridLayout>
+#include <QLabel>
+#include <QMainWindow>
+#include <QPointer>
+#include <QPushButton>
 
 #include "context.hpp"
 #include "visUtility.hpp"
 #include "neuronProperties.hpp"
 #include "slider.hpp"
 #include "edge.hpp"
+
+#include <optional>
 
 namespace { //anonymous namespace
 
@@ -342,13 +353,13 @@ namespace { //anonymous namespace
         return colors;
     }
 
-
     class Visualisation {
     public:
         Context context;
         Slider slider;
 
-        void run() {
+
+        void loadData() {
             vtkNew<vtkSphereSource> sphere;
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
@@ -390,20 +401,19 @@ namespace { //anonymous namespace
             }
             loadEdgesInefficient(*g, point_map, 0);
             
-
             vtkNew<vtkGraphLayout> layout;
             vtkNew<vtkPassThroughLayoutStrategy> strategy;
             layout->SetInputData(g);
             layout->SetLayoutStrategy(strategy);
 
-            vtkNew<vtkPassThroughEdgeStrategy> edge_strategy;
-            vtkNew<vtkEdgeLayout> edge_layout;
-            edge_layout->SetLayoutStrategy(edge_strategy);
-            edge_layout->SetInputConnection(layout->GetOutputPort());
+            vtkNew<vtkPassThroughEdgeStrategy> edgeStrategy;
+            vtkNew<vtkEdgeLayout> edgeLayout;
+            edgeLayout->SetLayoutStrategy(edgeStrategy);
+            edgeLayout->SetInputConnection(layout->GetOutputPort());
 
             // Convert the graph to a polydata
             vtkNew<vtkGraphToPolyData> graphToPolyData;
-            graphToPolyData->SetInputConnection(edge_layout->GetOutputPort());
+            graphToPolyData->SetInputConnection(edgeLayout->GetOutputPort());
             graphToPolyData->EdgeGlyphOutputOn();
             graphToPolyData->SetEdgeGlyphPosition(0.0);
             graphToPolyData->Update();
@@ -451,19 +461,73 @@ namespace { //anonymous namespace
                 polyData->GetPointData()->SetScalars(colors);
                 glyph3D->Update();
                 });
-
-            context.startRendering();
         }
+    };
+
+    class WidgetPanel {
+    public:
+        WidgetPanel(QMainWindow& window) {
+            // control area
+            window.addDockWidget(Qt::LeftDockWidgetArea, &controlDock);
+            controlDockTitle.setMargin(20);
+            controlDock.setTitleBarWidget(&controlDockTitle);
+
+            dockLayout = new QVBoxLayout();
+            layoutContainer.setLayout(dockLayout);
+            controlDock.setWidget(&layoutContainer);
+
+            randomizeButton.setText("Randomize");
+            dockLayout->addWidget(&randomizeButton);
+        }
+
+        QDockWidget controlDock;
+        QLabel controlDockTitle{ "Control Dock" };
+        QPointer<QVBoxLayout> dockLayout;
+        QWidget layoutContainer;
+        QPushButton randomizeButton;
+    };
+
+    class Application {
+    public:
+        Application(int argc, char** argv) {
+
+            QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
+            application.init(argc, argv);
+            std::cout << QApplication::applicationDirPath().toStdString() << std::endl;
+
+            mainWindow.init();
+            mainWindow->resize(1200, 600);
+
+            visualisation.init();
+            visualisation->loadData();
+            vtkWidget.init();
+            vtkWidget->setRenderWindow(visualisation->context.renderWindow);
+            mainWindow->setCentralWidget(vtkWidget.ptr());
+            std::optional<int> i;
+            
+            widgetPanel.init(mainWindow);
+        }
+
+        int run() {
+            mainWindow->show();
+
+            visualisation->context.renderWindow->Render();
+
+            return application->exec();
+        }
+
+        DeferredInit<QApplication> application;
+        DeferredInit<QMainWindow> mainWindow;
+        DeferredInit<QVTKOpenGLNativeWidget> vtkWidget;
+        DeferredInit<WidgetPanel> widgetPanel;
+        DeferredInit<Visualisation> visualisation;
     };
 
 }//namepsace
 
 
-int main() {
+int main(int argc, char** argv) {
     set_current_directory();
-
-    Visualisation visualisation;
-    visualisation.run();
-    
-    return EXIT_SUCCESS;
+    Application app(argc, argv);
+    return app.run();
 }
