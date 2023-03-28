@@ -34,6 +34,7 @@
 #include "edge.hpp"
 
 #include <optional>
+#include <QComboBox>
 
 
 namespace { //anonymous namespace
@@ -139,7 +140,7 @@ namespace { //anonymous namespace
         checkFile(file);
     }
 
-    vtkNew<vtkUnsignedCharArray> loadColorsInefficient(int timestep) {
+    vtkNew<vtkUnsignedCharArray> loadColorsInefficient(int timestep, int attribute) {
         const int pointCount = 5000;
         std::string path;
         if (timestep == 0) {
@@ -162,13 +163,10 @@ namespace { //anonymous namespace
         std::vector<double> values;
 
         vtkTable* table = reader->GetOutput();
-        auto projection = [](vtkTable* table, int attr, int i) {
-            return (table->GetValue(i, attr)).ToDouble();
-        };
 
         values.reserve(table->GetNumberOfRows());
         for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++) {
-            values.push_back(projection(table, 2, i));
+            values.push_back( table->GetValue(i, attribute).ToDouble() );
         }
 
         double mini = 0, maxi = 0.0;
@@ -356,6 +354,10 @@ namespace { //anonymous namespace
         vtkNew<vtkGlyph3DMapper> glyph3D;
         vtkNew<vtkActor> actor;
 
+        int lastTimestep;
+        int lastcolorAttribute;
+
+
         void loadData() {
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
@@ -388,7 +390,7 @@ namespace { //anonymous namespace
 #endif       
 
             vtkNew<vtkActor> arrowActor;
-#if 0
+#if 1
             vtkNew<vtkMutableDirectedGraph> g;
             // Add the coordinates of the points to the graph
             g->SetPoints(points);
@@ -450,12 +452,26 @@ namespace { //anonymous namespace
         }
 
         void firstRender() {
-            loadColors(0);
+            reloadColors(0, 0);
         }
 
     public slots:
-        void loadColors(int timestep) {
-            auto colors = loadColorsInefficient(timestep);
+        void changeTimestep(int timestep) {
+            reloadColors(timestep, lastcolorAttribute);
+        }
+
+        void changeColorAttribute(int colorAttribute) {
+            reloadColors(lastTimestep, colorAttribute);
+        }
+
+    private:
+        void reloadColors(int timestep, int colorAttribute) {
+            lastcolorAttribute = colorAttribute;
+            lastTimestep = timestep;
+
+            std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
+
+            auto colors = loadColorsInefficient(timestep, colorAttribute);
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
             glyph3D->Update();
@@ -468,26 +484,32 @@ namespace { //anonymous namespace
         WidgetPanel(QMainWindow& window, Visualisation& vis) {
             // control area
             window.addDockWidget(Qt::LeftDockWidgetArea, &controlDock);
-            controlDockTitle.setMargin(20);
             controlDock.setTitleBarWidget(&controlDockTitle);
-
-            dockLayout = new QVBoxLayout();
-            layoutContainer.setLayout(dockLayout);
             controlDock.setWidget(&layoutContainer);
 
-            randomizeButton.setText("Randomize");
-            dockLayout->addWidget(&randomizeButton);
+            controlDockTitle.setMargin(5);
+
+            auto dockLayout = new QVBoxLayout{};
+            layoutContainer.setLayout(dockLayout);
+            
+            auto attributeNames = std::to_array<const char*>({ "step", "fired", "fired fraction", "activity", "dampening", "current calcium",
+                "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
+            for (auto name : attributeNames) {
+                combobox.addItem(name);
+            }
+
+            dockLayout->addWidget(&combobox);
+            QObject::connect(&combobox, &QComboBox::currentIndexChanged, &vis, &Visualisation::changeColorAttribute);
 
             dockLayout->addWidget(&slider);
-            QObject::connect(&slider, &QSlider::valueChanged, &vis, &Visualisation::loadColors);
+            QObject::connect(&slider, &QSlider::valueChanged, &vis, &Visualisation::changeTimestep);
         }
 
         QDockWidget controlDock;
         QLabel controlDockTitle{ "Control Dock" };
-        QPointer<QVBoxLayout> dockLayout;
         QWidget layoutContainer;
-        QPushButton randomizeButton;
         QSlider slider;
+        QComboBox combobox;
     };
 
     class Application {
