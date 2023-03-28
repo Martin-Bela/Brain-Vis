@@ -8,9 +8,9 @@
 #include "neuronProperties.hpp"
 
 int main() {
-    set_current_directory();
+    setCurrentDirectory();
 
-    confirm_operation("Write \"yes\" if you want to remove all files in monitors-bin and begin preprocessing.");
+    confirmOperation("Write \"yes\" if you want to remove all files in monitors-bin and begin preprocessing.");
 
     using namespace std::chrono;
 
@@ -19,32 +19,32 @@ int main() {
         //throw std::runtime_error("Directory cannot be created.");
     }
 
-    auto input_path = (dataFolder / "monitors" / "0_").string();
-    auto output_path = (dataFolder / "monitors-bin" / "timestep").string();
+    auto inputPath = (dataFolder / "monitors" / "0_").string();
+    auto outputPath = (dataFolder / "monitors-bin" / "timestep").string();
 
-    auto global_start = steady_clock::now();
-    auto start = global_start;
-    constexpr int step_count = 50'000;
+    auto globalStart = steady_clock::now();
+    auto start = globalStart;
 
-    constexpr int open_files = 500;
+    constexpr int stepCount = 50'000;
+    constexpr int openFiles = 500;
 
-    for (int in_outer = 0; in_outer < step_count; in_outer += open_files) {
-        if (in_outer % 500 == 0) {
+    for (int inOuter = 0; inOuter < stepCount; inOuter += openFiles) {
+        if (inOuter % 500 == 0) {
             auto end = steady_clock::now();
-            std::cout << in_outer * 100 / 50'000 << "% " << duration_cast<duration<double>>(end - start) << "\n";
+            std::cout << inOuter * 100 / 50'000 << "% " << duration_cast<duration<double>>(end - start) << "\n";
             start = end;
         }
 
-        std::array<std::ifstream, open_files> in_files;
-        for (int in = 0; in < open_files; in++) {
-            auto path = input_path + std::to_string(in + in_outer) + ".csv";
-            in_files[in].open(path);
+        std::array<std::ifstream, openFiles> inFiles;
+        for (int in = 0; in < openFiles; in++) {
+            auto path = inputPath + std::to_string(in + inOuter) + ".csv";
+            inFiles[in].open(path);
         }
 
         for (int out = 0; out < 10'000; out++) {
-            std::ofstream out_file(output_path + std::to_string(out), std::ios::binary | std::ios::app | std::ios::ate);
-            for (int in = 0; in < open_files; in++) {
-                auto neuron = NeuronProperties::Parse(in_files[in]);
+            std::ofstream out_file(outputPath + std::to_string(out), std::ios::binary | std::ios::app | std::ios::ate);
+            for (int in = 0; in < openFiles; in++) {
+                auto neuron = NeuronProperties::Parse(inFiles[in]);
                 out_file.write(reinterpret_cast<const char*>(&neuron), sizeof(neuron));
             }
             if (!out_file.good()) {
@@ -52,11 +52,11 @@ int main() {
             }
         }
 
-        for (auto& file : in_files) {
+        for (auto& file : inFiles) {
             if (!file.good()) {
                 std::cout << "Input file error\n" << std::endl;
             }
         }
     }
-    std::cout << "Duration: " << duration_cast<duration<double>>(steady_clock::now() - global_start) << "\n";
+    std::cout << "Duration: " << duration_cast<duration<double>>(steady_clock::now() - globalStart) << "\n";
 }

@@ -4,7 +4,7 @@
 
 const std::filesystem::path dataFolder = "./data/viz-calcium";
 
-inline void set_current_directory() {
+inline void setCurrentDirectory() {
     std::filesystem::path path = std::filesystem::current_path();
     while (!path.filename().string().starts_with("brain-visualisation")) {
         auto parent = path.parent_path();
@@ -19,7 +19,7 @@ inline void set_current_directory() {
     std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
 }
 
-inline bool confirm_operation(const char* msg){
+inline bool confirmOperation(const char* msg){
     std::cout << msg << std::endl;
     std::string str;
     std::getline(std::cin, str);

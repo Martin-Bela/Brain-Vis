@@ -36,10 +36,10 @@
 
 namespace { //anonymous namespace
 
-    double manhattan_dist(double* x, double* y) {
-        double dx = x[0] - y[0];
-        double dy = x[1] - y[1];
-        double dz = x[2] - y[2];
+    double manhattanDist(double* x, double* y) {
+        auto dx = x[0] - y[0];
+        auto dy = x[1] - y[1];
+        auto dz = x[2] - y[2];
         return abs(dx) + abs(dy) + abs(dz);
     };
 
@@ -64,7 +64,7 @@ namespace { //anonymous namespace
                  (table->GetValue(i, 3)).ToDouble()
             };
 
-            if (point_index == -1 || manhattan_dist(positions.GetPoint(point_index), point) > 0.5) {
+            if (point_index == -1 || manhattanDist(positions.GetPoint(point_index), point) > 0.5) {
                 positions.InsertNextPoint(point);
                 point_index++;
             }
@@ -329,21 +329,13 @@ namespace { //anonymous namespace
         colors->SetName("colors");
         colors->SetNumberOfComponents(3);
 
-        auto manhattan_dist = [](double* x, float* y) {
-            auto dx = x[0] - y[0];
-            auto dy = x[1] - y[1];
-            auto dz = x[2] - y[2];
-
-            return abs(dx) + abs(dy) + abs(dz);
-        };
-
-        std::array<float, 3> prev_point{};
+        std::array<double, 3> prev_point{};
         auto color = generateNiceColor();
 
         for (int i = 0; i < points.GetNumberOfPoints(); i++) {
-            if (manhattan_dist(points.GetPoint(i), prev_point.data()) > 0.5) {
+            if (manhattanDist(points.GetPoint(i), prev_point.data()) > 0.5) {
                 auto point = points.GetPoint(i);
-                prev_point = { float(point[0]), float(point[1]), float(point[2]) };
+                prev_point = { point[0], point[1], point[2] };
                 color = generateNiceColor();
             }
 
@@ -527,7 +519,7 @@ namespace { //anonymous namespace
 
 
 int main(int argc, char** argv) {
-    set_current_directory();
+    setCurrentDirectory();
     Application app(argc, argv);
     return app.run();
 }

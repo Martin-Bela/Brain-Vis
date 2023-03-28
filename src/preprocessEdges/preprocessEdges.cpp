@@ -9,9 +9,9 @@
 
 
 int main() {
-    set_current_directory();
+    setCurrentDirectory();
 
-    confirm_operation("Write \"yes\" if you want to remove all files in network-bin and begin preprocessing.");
+    confirmOperation("Write \"yes\" if you want to remove all files in network-bin and begin preprocessing.");
 
     vtkNew<vtkDelimitedTextReader> reader;
     auto path = (dataFolder / "network/rank_0_step_0_in_network.txt").string();
