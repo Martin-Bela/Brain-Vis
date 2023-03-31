@@ -7,3 +7,5 @@
 /out
 /.vs
 CMakeSettings.json
+__pycache__
+/.vscode
