@@ -12,10 +12,20 @@
 #include <vtkGraphLayout.h>
 #include <vtkGraphLayoutView.h>
 #include <vtkArrowSource.h>
-#include <vtkBoostDividedEdgeBundling.h>
 #include <vtkPassThroughEdgeStrategy.h>
 #include <vtkPassThroughLayoutStrategy.h>
 #include <vtkEdgeLayout.h>
+#include <QVBoxLayout>
+#include <QVTKOpenGLNativeWidget.h>
+
+#include <QApplication>
+#include <QDockWidget>
+#include <QGridLayout>
+#include <QLabel>
+#include <QMainWindow>
+#include <QPointer>
+#include <QPushButton>
+#include <QSlider>
 
 #include "context.hpp"
 #include "visUtility.hpp"
@@ -23,12 +33,16 @@
 #include "slider.hpp"
 #include "edge.hpp"
 
+#include <optional>
+#include <QComboBox>
+
+
 namespace { //anonymous namespace
 
-    double manhattan_dist(double* x, double* y) {
-        double dx = x[0] - y[0];
-        double dy = x[1] - y[1];
-        double dz = x[2] - y[2];
+    double manhattanDist(double* x, double* y) {
+        auto dx = x[0] - y[0];
+        auto dy = x[1] - y[1];
+        auto dz = x[2] - y[2];
         return abs(dx) + abs(dy) + abs(dz);
     };
 
@@ -53,7 +67,7 @@ namespace { //anonymous namespace
                  (table->GetValue(i, 3)).ToDouble()
             };
 
-            if (point_index == -1 || manhattan_dist(positions.GetPoint(point_index), point) > 0.5) {
+            if (point_index == -1 || manhattanDist(positions.GetPoint(point_index), point) > 0.5) {
                 positions.InsertNextPoint(point);
                 point_index++;
             }
@@ -126,7 +140,7 @@ namespace { //anonymous namespace
         checkFile(file);
     }
 
-    vtkNew<vtkUnsignedCharArray> loadColorsInefficient(int timestep) {
+    vtkNew<vtkUnsignedCharArray> loadColorsInefficient(int timestep, int attribute) {
         const int pointCount = 5000;
         std::string path;
         if (timestep == 0) {
@@ -149,13 +163,10 @@ namespace { //anonymous namespace
         std::vector<double> values;
 
         vtkTable* table = reader->GetOutput();
-        auto projection = [](vtkTable* table, int attr, int i) {
-            return (table->GetValue(i, attr)).ToDouble();
-        };
 
         values.reserve(table->GetNumberOfRows());
         for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++) {
-            values.push_back(projection(table, 2, i));
+            values.push_back( table->GetValue(i, attribute).ToDouble() );
         }
 
         double mini = 0, maxi = 0.0;
@@ -318,21 +329,13 @@ namespace { //anonymous namespace
         colors->SetName("colors");
         colors->SetNumberOfComponents(3);
 
-        auto manhattan_dist = [](double* x, float* y) {
-            auto dx = x[0] - y[0];
-            auto dy = x[1] - y[1];
-            auto dz = x[2] - y[2];
-
-            return abs(dx) + abs(dy) + abs(dz);
-        };
-
-        std::array<float, 3> prev_point{};
+        std::array<double, 3> prev_point{};
         auto color = generateNiceColor();
 
         for (int i = 0; i < points.GetNumberOfPoints(); i++) {
-            if (manhattan_dist(points.GetPoint(i), prev_point.data()) > 0.5) {
+            if (manhattanDist(points.GetPoint(i), prev_point.data()) > 0.5) {
                 auto point = points.GetPoint(i);
-                prev_point = { float(point[0]), float(point[1]), float(point[2]) };
+                prev_point = { point[0], point[1], point[2] };
                 color = generateNiceColor();
             }
 
@@ -342,19 +345,24 @@ namespace { //anonymous namespace
         return colors;
     }
 
-
-    class Visualisation {
+    class Visualisation : public QObject {
     public:
         Context context;
-        Slider slider;
+        vtkNew<vtkSphereSource> sphere;
+        vtkNew<vtkPoints> points;
+        vtkNew<vtkPolyData> polyData;
+        vtkNew<vtkGlyph3DMapper> glyph3D;
+        vtkNew<vtkActor> actor;
 
-        void run() {
-            vtkNew<vtkSphereSource> sphere;
+        int lastTimestep;
+        int lastcolorAttribute;
+
+
+        void loadData() {
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
             sphere->SetRadius(0.6);
 
-            vtkNew<vtkPoints> points;
             std::map<int, int> point_map = loadPositions(*points);
             // Add the coordinates of the points to the graph
 #if 0
@@ -381,6 +389,8 @@ namespace { //anonymous namespace
             graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
 #endif       
 
+            vtkNew<vtkActor> arrowActor;
+#if 1
             vtkNew<vtkMutableDirectedGraph> g;
             // Add the coordinates of the points to the graph
             g->SetPoints(points);
@@ -390,20 +400,19 @@ namespace { //anonymous namespace
             }
             loadEdgesInefficient(*g, point_map, 0);
             
-
             vtkNew<vtkGraphLayout> layout;
             vtkNew<vtkPassThroughLayoutStrategy> strategy;
             layout->SetInputData(g);
             layout->SetLayoutStrategy(strategy);
 
-            vtkNew<vtkPassThroughEdgeStrategy> edge_strategy;
-            vtkNew<vtkEdgeLayout> edge_layout;
-            edge_layout->SetLayoutStrategy(edge_strategy);
-            edge_layout->SetInputConnection(layout->GetOutputPort());
+            vtkNew<vtkPassThroughEdgeStrategy> edgeStrategy;
+            vtkNew<vtkEdgeLayout> edgeLayout;
+            edgeLayout->SetLayoutStrategy(edgeStrategy);
+            edgeLayout->SetInputConnection(layout->GetOutputPort());
 
             // Convert the graph to a polydata
             vtkNew<vtkGraphToPolyData> graphToPolyData;
-            graphToPolyData->SetInputConnection(edge_layout->GetOutputPort());
+            graphToPolyData->SetInputConnection(edgeLayout->GetOutputPort());
             graphToPolyData->EdgeGlyphOutputOn();
             graphToPolyData->SetEdgeGlyphPosition(0.0);
             graphToPolyData->Update();
@@ -423,47 +432,126 @@ namespace { //anonymous namespace
             // Add the edge arrow actor to the view.
             vtkNew<vtkPolyDataMapper> arrowMapper;
             arrowMapper->SetInputConnection(arrowGlyph->GetOutputPort());
-            vtkNew<vtkActor> arrowActor;
+            
             arrowActor->SetMapper(arrowMapper);
             arrowActor->GetProperty()->SetOpacity(0.75);
             arrowActor->GetProperty()->SetColor(namedColors->GetColor3d("DarkGray").GetData());
-            
+#endif
 
-            vtkNew<vtkPolyData> polyData;
             polyData->SetPoints(points);
             
-            vtkNew<vtkGlyph3DMapper> glyph3D;
             glyph3D->SetInputData(polyData);
             glyph3D->SetSourceConnection(sphere->GetOutputPort());
             glyph3D->Update();
             
-            vtkNew<vtkActor> actor;
             actor->SetMapper(glyph3D);
             actor->GetProperty()->SetPointSize(30);
             actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
             context.init({ actor, arrowActor });
-
-            slider.init(context, [&points, &polyData, &glyph3D, &point_map](vtkSliderWidget* widget, vtkSliderRepresentation2D* representation, unsigned long, void*) {
-                //todo add slider functionality
-                auto colors = loadColorsInefficient((int) representation->GetValue());
-                //auto colors = colorsFromPositions(*points);
-                polyData->GetPointData()->SetScalars(colors);
-                glyph3D->Update();
-                });
-
-            context.startRendering();
         }
+
+        void firstRender() {
+            reloadColors(0, 0);
+        }
+
+    public slots:
+        void changeTimestep(int timestep) {
+            reloadColors(timestep, lastcolorAttribute);
+        }
+
+        void changeColorAttribute(int colorAttribute) {
+            reloadColors(lastTimestep, colorAttribute);
+        }
+
+    private:
+        void reloadColors(int timestep, int colorAttribute) {
+            lastcolorAttribute = colorAttribute;
+            lastTimestep = timestep;
+
+            std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
+
+            auto colors = loadColorsInefficient(timestep, colorAttribute);
+            //auto colors = colorsFromPositions(*points);
+            polyData->GetPointData()->SetScalars(colors);
+            glyph3D->Update();
+            context.renderWindow->Render();
+        }
+    };
+
+    class WidgetPanel {
+    public:
+        WidgetPanel(QMainWindow& window, Visualisation& vis) {
+            // control area
+            window.addDockWidget(Qt::LeftDockWidgetArea, &controlDock);
+            controlDock.setTitleBarWidget(&controlDockTitle);
+            controlDock.setWidget(&layoutContainer);
+
+            controlDockTitle.setMargin(5);
+
+            auto dockLayout = new QVBoxLayout{};
+            layoutContainer.setLayout(dockLayout);
+            
+            auto attributeNames = std::to_array<const char*>({ "step", "fired", "fired fraction", "activity", "dampening", "current calcium",
+                "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
+            for (auto name : attributeNames) {
+                combobox.addItem(name);
+            }
+
+            dockLayout->addWidget(&combobox);
+            QObject::connect(&combobox, &QComboBox::currentIndexChanged, &vis, &Visualisation::changeColorAttribute);
+
+            dockLayout->addWidget(&slider);
+            QObject::connect(&slider, &QSlider::valueChanged, &vis, &Visualisation::changeTimestep);
+        }
+
+        QDockWidget controlDock;
+        QLabel controlDockTitle{ "Control Dock" };
+        QWidget layoutContainer;
+        QSlider slider;
+        QComboBox combobox;
+    };
+
+    class Application {
+    public:
+        Application(int argc, char** argv) {
+
+            QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
+            application.init(argc, argv);
+            std::cout << QApplication::applicationDirPath().toStdString() << std::endl;
+
+            mainWindow.init();
+            mainWindow->resize(1200, 600);
+
+            visualisation.init();
+            visualisation->loadData();
+            vtkWidget.init();
+            vtkWidget->setRenderWindow(visualisation->context.renderWindow);
+            mainWindow->setCentralWidget(vtkWidget.ptr());
+            
+            widgetPanel.init(mainWindow, visualisation);
+        }
+
+        int run() {
+            mainWindow->show();
+
+            visualisation->firstRender();
+
+            return application->exec();
+        }
+
+        DeferredInit<QApplication> application;
+        DeferredInit<QMainWindow> mainWindow;
+        DeferredInit<QVTKOpenGLNativeWidget> vtkWidget;
+        DeferredInit<WidgetPanel> widgetPanel;
+        DeferredInit<Visualisation> visualisation;
     };
 
 }//namepsace
 
 
-int main() {
-    set_current_directory();
-
-    Visualisation visualisation;
-    visualisation.run();
-    
-    return EXIT_SUCCESS;
+int main(int argc, char** argv) {
+    setCurrentDirectory();
+    Application app(argc, argv);
+    return app.run();
 }

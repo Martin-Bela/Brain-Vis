@@ -75,7 +75,6 @@ public:
         sliderRep->GetPoint2Coordinate()->SetCoordinateSystemToDisplay();
         sliderRep->GetPoint2Coordinate()->SetValue(200, 80);
 
-        sliderWidget->SetInteractor(context.renderWindowInteractor);
         sliderWidget->SetRepresentation(sliderRep);
         sliderWidget->SetAnimationModeToAnimate();
         sliderWidget->EnabledOn();
