@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
+    <width>1053</width>
     <height>600</height>
    </rect>
   </property>
@@ -47,6 +47,16 @@
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <widget class="QComboBox" name="comboBox"/>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="showEdgesCheckBox">
+         <property name="text">
+          <string>Show Edges</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item>
         <spacer name="verticalSpacer">

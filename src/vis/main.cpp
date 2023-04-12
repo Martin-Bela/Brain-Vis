@@ -266,7 +266,10 @@ namespace { //anonymous namespace
         vtkNew<vtkPoints> points;
         vtkNew<vtkPolyData> polyData;
         vtkNew<vtkGlyph3DMapper> glyph3D;
+
         vtkNew<vtkActor> actor;
+        vtkNew<vtkActor> arrowActor;
+
         std::map<int, int> point_map;
 
         int lastTimestep;
@@ -304,7 +307,6 @@ namespace { //anonymous namespace
             graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
 #endif       
 
-            vtkNew<vtkActor> arrowActor;
 #if 1
             vtkNew<vtkMutableDirectedGraph> g;
             // Add the coordinates of the points to the graph
@@ -313,7 +315,7 @@ namespace { //anonymous namespace
             for (int i = 0; i < points->GetNumberOfPoints(); i++) {
                 g->AddVertex();
             }
-            //loadEdgesInefficient(*g, point_map, 0);
+            loadEdgesInefficient(*g, point_map, 0);
             
             vtkNew<vtkGraphLayout> layout;
             vtkNew<vtkPassThroughLayoutStrategy> strategy;
@@ -379,6 +381,16 @@ namespace { //anonymous namespace
             reloadColors(lastTimestep, colorAttribute);
         }
 
+        void showEdges(int state) {
+            if (state == Qt::Checked) {
+                context.renderer->AddActor(arrowActor);
+            }
+            else {
+                context.renderer->RemoveActor(arrowActor);
+            }
+            context.render();
+        }
+
     private:
         void reloadColors(int timestep, int colorAttribute) {
             lastcolorAttribute = colorAttribute;
@@ -390,7 +402,7 @@ namespace { //anonymous namespace
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
             glyph3D->Update();
-            context.renderWindow->Render();
+            context.render();
         }
     };
 
@@ -421,6 +433,7 @@ namespace { //anonymous namespace
 
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestep);
+            QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
         }
 
         int run() {

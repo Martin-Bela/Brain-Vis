@@ -32,4 +32,8 @@ public:
         renderWindow->AddRenderer(renderer);
             
     }
+
+    void render() {
+        renderWindow->Render();
+    }
 };
