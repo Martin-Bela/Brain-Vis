@@ -111,15 +111,13 @@ namespace { //anonymous namespace
 
     void loadEdges(vtkMutableDirectedGraph& g, std::map<int, int> map) {
         auto path = (dataFolder / "network-bin/rank_0_step_0_in_network").string();
-        std::ifstream file(path, std::ios::binary);
-        checkFile(file);
+        BinaryReader<Edge> reader(path);
 
         int edge_n = 0;
         std::map<int, int> edge_count;
         std::vector<int> edges;
-        for (unsigned i = 0; i < std::filesystem::file_size(path) / sizeof(Edge); i++) {
-            Edge edge;
-            file.read(reinterpret_cast<char*>(&edge), sizeof(edge));
+        for (unsigned i = 0; i < reader.count(); i++) {
+            Edge edge = reader.read();
 
             if (edge_count.contains(10000 * map[edge.from] + map[edge.to])) {
                 edge_count[10000 * map[edge.from] + map[edge.to]]++;
@@ -128,7 +126,6 @@ namespace { //anonymous namespace
                 edges.push_back(10000 * map[edge.from] + map[edge.to]);
                 edge_count[10000 * map[edge.from] + map[edge.to]] = 1;
             }
-            //checkFile(file);
         }
 
         for (int val : edges) {
@@ -139,7 +136,6 @@ namespace { //anonymous namespace
         }
 
         cout << edge_n << endl;
-        checkFile(file);
     }
 
     vtkNew<vtkUnsignedCharArray> loadColorsInefficient(int timestep, int attribute) {
@@ -214,8 +210,8 @@ namespace { //anonymous namespace
         const int pointCount = 50000;
         auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(100 * timestep);
         
-        auto size = std::filesystem::file_size(path);
-        if (size < sizeof(NeuronProperties) * pointCount) {
+        BinaryReader<NeuronProperties> reader(path);
+        if (reader.count() < pointCount) {
             std::cout << "File:\"" << path << "\" is too small.\n";
             std::cout << sizeof(NeuronProperties) * pointCount << "bytes expected.\n";
         }
@@ -282,14 +278,10 @@ namespace { //anonymous namespace
                 std::cout << sizeof(NeuronProperties) * pointCount << "bytes expected.\n";
             }
 
-            std::ifstream in(path, std::ios::binary);
-            checkFile(in);
+            BinaryReader<NeuronProperties> reader(path);
 
             for (int i = 0; i < pointCount; i++) {
-                NeuronProperties neuron{};
-                in.read(reinterpret_cast<char*>(&neuron), sizeof(NeuronProperties));
-                checkFile(in);
-
+                NeuronProperties neuron = reader.read();
                 values[i] += projection(neuron);
             }
         }
@@ -505,7 +497,7 @@ namespace { //anonymous namespace
             for (auto name : attributeNames) {
                 mainUI->comboBox->addItem(name);
             }
-            
+
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestep);
         }
