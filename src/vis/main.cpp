@@ -138,75 +138,7 @@ namespace { //anonymous namespace
         cout << edge_n << endl;
     }
 
-    vtkNew<vtkUnsignedCharArray> loadColorsInefficient(int timestep, int attribute) {
-        const int pointCount = 5000;
-        std::string path;
-        if (timestep == 0) {
-            path = (dataFolder / "monitors2/monitors_0.csv").string();
-        }
-        else {
-            path = (dataFolder / "monitors2/monitors_").string() + std::to_string(timestep) + "0000.csv";
-        }
-
-        vtkNew<vtkDelimitedTextReader> reader;
-        reader->SetFileName(path.data());
-        reader->DetectNumericColumnsOn();
-        reader->SetFieldDelimiterCharacters(";");
-        reader->Update();
-
-        vtkNew<vtkUnsignedCharArray> colors;
-        colors->SetName("colors");
-        colors->SetNumberOfComponents(3);
-        
-        std::vector<double> values;
-
-        vtkTable* table = reader->GetOutput();
-
-        values.reserve(table->GetNumberOfRows());
-        for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++) {
-            values.push_back( table->GetValue(i, attribute).ToDouble() );
-        }
-
-        double mini = 0, maxi = 0.0;
-        
-        double avg = 0;
-        for (int i = 0; i < pointCount; i++) {
-            //mini = std::min(values[i], mini);
-            maxi = std::max(values[i], maxi);
-            avg += values[i];
-        }
-
-        for (int i = 0; i < pointCount; i++) {
-            std::array<unsigned char, 3> color = { 255, 255, 255 };         
-            auto val = (values[i] - mini) / (maxi - mini);
-            val = val * 2 - 1;
-
-            
-            if (val > 0) {
-                color[1] = 255 - 255 * val;
-                color[2] = color[1];
-            }
-            else {
-                color[1] = 255 + 255 * val;
-                color[0] = color[1];
-            }
-            
-
-            /*if (values[i] > 0.5) {
-                color[1] = 0;
-                color[2] = 0;
-            }
-            else {
-                color[1] = 0;
-                color[0] = 0;
-            }*/
-            
-            colors->InsertNextTypedTuple(color.data());
-        }
-        return colors;
-    }
-
-    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, std::map<int, int> map) {
+    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::map<int, int>& map) {
         const int pointCount = 50000;
         auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(100 * timestep);
         
@@ -216,36 +148,25 @@ namespace { //anonymous namespace
             std::cout << sizeof(NeuronProperties) * pointCount << "bytes expected.\n";
         }
 
-        std::ifstream in(path, std::ios::binary);
-        checkFile(in);
-
         vtkNew<vtkUnsignedCharArray> colors;
         colors->SetName("colors");
         colors->SetNumberOfComponents(3);
 
-        auto projection = [](NeuronProperties& prop) {
-            return (float) prop.calcium;
-        };
-
         float mini = INFINITY, maxi = -INFINITY;
         for (int i = 0; i < pointCount; i++) {
-            NeuronProperties neuron{};
-            in.read(reinterpret_cast<char*>(&neuron), sizeof(NeuronProperties));
-            checkFile(in);
-            mini = std::min(projection(neuron), mini);
-            maxi = std::max(projection(neuron), maxi);
+            NeuronProperties neuron = reader.read();
+            mini = std::min(neuron.projection(colorAttribute), mini);
+            maxi = std::max(neuron.projection(colorAttribute), maxi);
         }
-        in.seekg(0);
+        reader.setPos(0);
 
         for (int i = 0; i < pointCount; i++) {
-            NeuronProperties neuron{};
-            in.read(reinterpret_cast<char*>(&neuron), sizeof(NeuronProperties));
-            checkFile(in);
+            NeuronProperties neuron = reader.read();
 
-            if (i == 0 || map[i] == map[i - 1]) continue;
+            if (i == 0 || map.at(i) == map.at(i - 1)) continue;
             std::array<unsigned char, 3> color = { 255, 255, 255 };
 
-            auto val = (projection(neuron) - mini) / (maxi - mini);
+            auto val = (neuron.projection(colorAttribute) - mini) / (maxi - mini);
             val = val * 2 - 1;
 
             if (val > 0) {
@@ -272,13 +193,12 @@ namespace { //anonymous namespace
         
         for (int j = 0; j < timestepCount; j++) {
             auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(j);
-            auto size = std::filesystem::file_size(path);
-            if (size < sizeof(NeuronProperties) * pointCount) {
+            BinaryReader<NeuronProperties> reader(path);
+
+            if (reader.count() < pointCount) {
                 std::cout << "File:\"" << path << "\" is too small.\n";
                 std::cout << sizeof(NeuronProperties) * pointCount << "bytes expected.\n";
             }
-
-            BinaryReader<NeuronProperties> reader(path);
 
             for (int i = 0; i < pointCount; i++) {
                 NeuronProperties neuron = reader.read();
@@ -347,6 +267,7 @@ namespace { //anonymous namespace
         vtkNew<vtkPolyData> polyData;
         vtkNew<vtkGlyph3DMapper> glyph3D;
         vtkNew<vtkActor> actor;
+        std::map<int, int> point_map;
 
         int lastTimestep;
         int lastcolorAttribute;
@@ -357,7 +278,7 @@ namespace { //anonymous namespace
             sphere->SetThetaResolution(10);
             sphere->SetRadius(0.6);
 
-            std::map<int, int> point_map = loadPositions(*points);
+            point_map = loadPositions(*points);
             // Add the coordinates of the points to the graph
 #if 0
             vtkNew<vtkMutableDirectedGraph> g;
@@ -392,7 +313,7 @@ namespace { //anonymous namespace
             for (int i = 0; i < points->GetNumberOfPoints(); i++) {
                 g->AddVertex();
             }
-            loadEdgesInefficient(*g, point_map, 0);
+            //loadEdgesInefficient(*g, point_map, 0);
             
             vtkNew<vtkGraphLayout> layout;
             vtkNew<vtkPassThroughLayoutStrategy> strategy;
@@ -465,7 +386,7 @@ namespace { //anonymous namespace
 
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
 
-            auto colors = loadColorsInefficient(timestep, colorAttribute);
+            auto colors = loadColors(timestep, colorAttribute, point_map);
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
             glyph3D->Update();
@@ -492,7 +413,7 @@ namespace { //anonymous namespace
             visualisationWidget->setRenderWindow(visualisation->context.renderWindow);
             mainUI->mainVisDock->addWidget(visualisationWidget.ptr());
 
-            auto attributeNames = std::to_array<const char*>({ "step", "fired", "fired fraction", "activity", "dampening", "current calcium",
+            auto attributeNames = std::to_array<const char*>({ "fired", "fired fraction", "activity", "dampening", "current calcium",
                 "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
             for (auto name : attributeNames) {
                 mainUI->comboBox->addItem(name);

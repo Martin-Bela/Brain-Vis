@@ -73,7 +73,7 @@ public:
         }
 
         auto byteSize = std::filesystem::file_size(path);
-        assert(itemCount % sizeof(T) == 0);
+        assert(byteSize % sizeof(T) == 0);
         itemCount = byteSize / sizeof(T);
     }
     

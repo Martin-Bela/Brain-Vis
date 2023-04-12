@@ -19,7 +19,7 @@ struct NeuronProperties {
     float grownDendrites;
     uint32_t connectedDendrites;
 
-    static NeuronProperties Parse(std::ifstream& stream) {
+    static NeuronProperties parse(std::ifstream& stream) {
         NeuronProperties result{};
 
         constexpr auto all = std::numeric_limits<std::streamsize>::max();
@@ -52,6 +52,25 @@ struct NeuronProperties {
         stream >> result.connectedDendrites;
         stream.ignore(all, '\n');
         return result;
+    }
+
+    float projection(int i) const {
+        switch (i) {
+            case 0: return fired;
+            case 1: return firedFraction;
+            case 2: return electricActivity;
+            case 3: return secondaryVariable;
+            case 4: return calcium;
+            case 5: return targetCalcium;
+            case 6: return synapticInput;
+            case 7: return backgroundActivity;
+            case 8: return grownAxons;
+            case 9: return connectedAxons;
+            case 10: return grownDendrites;
+            case 11: return connectedDendrites;
+        }
+        assert(false);
+        return 0;
     }
 };
 
