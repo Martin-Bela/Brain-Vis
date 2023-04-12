@@ -33,6 +33,8 @@
 #include "slider.hpp"
 #include "edge.hpp"
 
+#include "ui_mainWindow.h"
+
 #include <optional>
 #include <QComboBox>
 
@@ -479,39 +481,6 @@ namespace { //anonymous namespace
         }
     };
 
-    class WidgetPanel {
-    public:
-        WidgetPanel(QMainWindow& window, Visualisation& vis) {
-            // control area
-            window.addDockWidget(Qt::LeftDockWidgetArea, &controlDock);
-            controlDock.setTitleBarWidget(&controlDockTitle);
-            controlDock.setWidget(&layoutContainer);
-
-            controlDockTitle.setMargin(5);
-
-            auto dockLayout = new QVBoxLayout{};
-            layoutContainer.setLayout(dockLayout);
-            
-            auto attributeNames = std::to_array<const char*>({ "step", "fired", "fired fraction", "activity", "dampening", "current calcium",
-                "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
-            for (auto name : attributeNames) {
-                combobox.addItem(name);
-            }
-
-            dockLayout->addWidget(&combobox);
-            QObject::connect(&combobox, &QComboBox::currentIndexChanged, &vis, &Visualisation::changeColorAttribute);
-
-            dockLayout->addWidget(&slider);
-            QObject::connect(&slider, &QSlider::valueChanged, &vis, &Visualisation::changeTimestep);
-        }
-
-        QDockWidget controlDock;
-        QLabel controlDockTitle{ "Control Dock" };
-        QWidget layoutContainer;
-        QSlider slider;
-        QComboBox combobox;
-    };
-
     class Application {
     public:
         Application(int argc, char** argv) {
@@ -521,15 +490,24 @@ namespace { //anonymous namespace
             std::cout << QApplication::applicationDirPath().toStdString() << std::endl;
 
             mainWindow.init();
-            mainWindow->resize(1200, 600);
+            mainUI.init();
+            mainUI->setupUi(mainWindow.ptr());
 
             visualisation.init();
             visualisation->loadData();
-            vtkWidget.init();
-            vtkWidget->setRenderWindow(visualisation->context.renderWindow);
-            mainWindow->setCentralWidget(vtkWidget.ptr());
+
+            visualisationWidget.init();
+            visualisationWidget->setRenderWindow(visualisation->context.renderWindow);
+            mainUI->mainVisDock->addWidget(visualisationWidget.ptr());
+
+            auto attributeNames = std::to_array<const char*>({ "step", "fired", "fired fraction", "activity", "dampening", "current calcium",
+                "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
+            for (auto name : attributeNames) {
+                mainUI->comboBox->addItem(name);
+            }
             
-            widgetPanel.init(mainWindow, visualisation);
+            QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
+            QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestep);
         }
 
         int run() {
@@ -542,9 +520,11 @@ namespace { //anonymous namespace
 
         DeferredInit<QApplication> application;
         DeferredInit<QMainWindow> mainWindow;
-        DeferredInit<QVTKOpenGLNativeWidget> vtkWidget;
-        DeferredInit<WidgetPanel> widgetPanel;
+        DeferredInit<Ui::MainWindow> mainUI;
+
         DeferredInit<Visualisation> visualisation;
+        DeferredInit<QVTKOpenGLNativeWidget> visualisationWidget;
+
     };
 
 }//namepsace

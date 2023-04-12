@@ -13,7 +13,7 @@ find_package(VTK REQUIRED)
 #QT6
 find_package(Qt6 REQUIRED COMPONENTS Core Gui OpenGLWidgets Widgets)
 set(CMAKE_AUTOMOC ON)
-#set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOUIC ON)
 set(QT_MODULES Qt6::Core Qt6::Gui Qt6::OpenGLWidgets Qt6::Widgets)
 
 # Neuron properties preprocessing
@@ -25,7 +25,7 @@ target_link_libraries(PreprocessNetwork PRIVATE ${VTK_LIBRARIES})
 
 # Brain visualisation
 file(GLOB VIS_FILES CONFIGURE_DEPENDS "src/vis/*")
-add_executable("${PROJECT_NAME}" ${VIS_FILES} "src/utility.hpp" "src/edge.hpp" "src/neuronProperties.hpp")
+add_executable("${PROJECT_NAME}" ${VIS_FILES} "src/vis/mainWindow.ui" "src/utility.hpp" "src/edge.hpp" "src/neuronProperties.hpp")
 target_link_libraries("${PROJECT_NAME}" PRIVATE ${VTK_LIBRARIES} ${QT_MODULES})
 
 
