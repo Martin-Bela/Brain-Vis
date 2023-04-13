@@ -1,8 +1,7 @@
-#include <array>
+#include <concepts>
 #include <filesystem>
 #include <fstream>
-#include <exception>
-#include <assert.h>
+#include <cassert>
 
 #include "utility.hpp"
 
@@ -29,6 +28,9 @@ public:
         T t;
         file.read(reinterpret_cast<char*>(&t), sizeof(T));
         checkFile(file);
+		if constexpr (std::same_as<T, struct NeuronProperties>) {
+            t.fired -= '0';
+        }
         return t;
     }
 
