@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <fstream>
 #include <limits>
+#include <assert.h>
 
 struct NeuronProperties {
     uint8_t fired; // 1 or 0

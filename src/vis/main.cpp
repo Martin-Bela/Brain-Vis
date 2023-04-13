@@ -32,6 +32,7 @@
 #include "neuronProperties.hpp"
 #include "slider.hpp"
 #include "edge.hpp"
+#include "binaryReader.hpp"
 
 #include "ui_mainWindow.h"
 
