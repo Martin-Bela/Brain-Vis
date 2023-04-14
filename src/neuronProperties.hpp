@@ -66,9 +66,9 @@ struct NeuronProperties {
             case 6: return synapticInput;
             case 7: return backgroundActivity;
             case 8: return grownAxons;
-            case 9: return connectedAxons;
+            case 9: return static_cast<float>(connectedAxons);
             case 10: return grownDendrites;
-            case 11: return connectedDendrites;
+            case 11: return static_cast<float>(connectedDendrites);
         }
         assert(false);
         return 0;

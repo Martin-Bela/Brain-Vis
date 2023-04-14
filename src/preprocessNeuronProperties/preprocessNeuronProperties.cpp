@@ -90,22 +90,16 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
     const int attributeCount = 12;
 
     std::ofstream outputFiles[attributeCount];
-    AttributeStack attributeData[attributeCount];
 
     std::filesystem::remove_all(dataFolder / "monitors-histogram");
     std::filesystem::create_directory(dataFolder / "monitors-histogram");
     for (int i = 0; i < 12; i++) {
-        outputFiles[i].open((dataFolder / "monitors-histogram" / attributeToString(i)).string());
-        outputFiles[i] << "# timestep mean sum max min" << std::endl;
+        outputFiles[i].open((dataFolder / "monitors-histogram" / attributeToString(i)).string(), std::ios::binary);
+        outputFiles[i] << "# mean sum max min" << std::endl;
     }
 
     for (int i = 0; i < timestepCount; i++) {
-        // Reset the structs used for counting the data at each timestep
-        for (int j = 0; j < attributeCount; j++) {
-            attributeData[j].max = std::numeric_limits<float>::min();
-            attributeData[j].min = std::numeric_limits<float>::max();
-            attributeData[j].sum = 0;
-        }
+        AttributeStack attributeData[attributeCount];
 
         auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(i);
         BinaryReader<NeuronProperties> reader(path);
@@ -122,10 +116,6 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
             float value;
             for (int j = 0; j < attributeCount; j++) {
                 value = neuron.projection(j);
-                // This check is here because i dont know how C++ casts uint to float
-                if (j == 0) {
-                    value -= 48.0;
-                }
                 attributeData[j].max = std::max(attributeData[j].max, value);
                 attributeData[j].min = std::min(attributeData[j].min, value);
                 attributeData[j].sum += value;
@@ -134,12 +124,10 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
 
         // Print the iteration data into the opened file
         for (int j = 0; j < attributeCount; j++) {
-            std::string line = std::to_string(i) + " " + std::to_string(attributeData[j].sum / pointCount) + " " + std::to_string(attributeData[j].sum) + " " + std::to_string(attributeData[j].max) + " " + std::to_string(attributeData[j].min);
-            outputFiles[j] << line << std::endl;
+            std::string line = std::format("{}, {}, {}, {}\n",
+                attributeData[j].sum / pointCount, attributeData[j].sum, attributeData[j].max, attributeData[j].min);
+            outputFiles[j] << line;
         }
-    }
-    for (int j = 0; j < attributeCount; j++) {
-        outputFiles[j].close();
     }
 }
 
