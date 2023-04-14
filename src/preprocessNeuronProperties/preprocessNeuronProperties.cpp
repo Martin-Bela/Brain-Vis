@@ -1,3 +1,4 @@
+#undef NDEBUG
 #include <array>
 #include <filesystem>
 #include <iostream>
@@ -95,7 +96,7 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
     std::filesystem::create_directory(dataFolder / "monitors-histogram");
     for (int i = 0; i < 12; i++) {
         outputFiles[i].open((dataFolder / "monitors-histogram" / attributeToString(i)).string(), std::ios::binary);
-        outputFiles[i] << "# mean sum max min" << std::endl;
+        outputFiles[i] << "# mean sum max min                                             \n";
     }
 
     for (int i = 0; i < timestepCount; i++) {
@@ -124,8 +125,10 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
 
         // Print the iteration data into the opened file
         for (int j = 0; j < attributeCount; j++) {
-            std::string line = std::format("{}, {}, {}, {}\n",
+            std::string line = std::format("{:15},{:15},{:15},{:15}\n",
                 attributeData[j].sum / pointCount, attributeData[j].sum, attributeData[j].max, attributeData[j].min);
+
+            assert(line.size() == 64);
             outputFiles[j] << line;
         }
     }
@@ -139,6 +142,6 @@ int main() {
     const std::filesystem::path stimulusFolder = "./data/viz-stimulus";
     //preprocessProperties(calcuiumFolder);
     //preprocessProperties(stimulusFolder);
-    preprocessTimestepProperties(calcuiumFolder, 50);
+    preprocessTimestepProperties(calcuiumFolder, 10000);
 
 }
