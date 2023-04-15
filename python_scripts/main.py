@@ -2,6 +2,8 @@ import argparse
 
 from modules.playground import run_playground
 from modules.clustering import run_clustering
+from modules.project_to_2d import run_project_to_2d
+from modules.timehist import run_timehist
 
 def main():
     parser = argparse.ArgumentParser(
@@ -25,16 +27,30 @@ def main():
                         action='store_true',
                         help="Remove Local Connections"
                         )
+    parser.add_argument('-d', '--project-to-2d',
+                        action='store_true',
+                        help="Generate Projection  from 3D positions to 2D positions"
+                        )
+    parser.add_argument('-t', '--time-hist',
+                        action='store_true',
+                        help="Generate Histogram  Timeline"
+                        )
 
 
     args = parser.parse_args()
-    print(args)
+
     if args.clustering:
         print("clustering")
         run_clustering(args.dir_name)
 
     if args.playground:
         run_playground(args.dir_name)
+
+    if args.project_to_2d:
+        run_project_to_2d(args.dir_name)
+
+    if args.time_hist:
+        run_timehist(args.dir_name)
 
 ###############################################################################
 

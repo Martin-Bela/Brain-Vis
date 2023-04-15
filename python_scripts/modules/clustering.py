@@ -5,10 +5,9 @@ from random import random
 import numpy as np
 from scipy.cluster.hierarchy import linkage, dendrogram
 from scipy.spatial.distance import pdist
-
-
 import matplotlib.pyplot as plt
-from functions import load_positions, load_network, get_connexels, connex_size
+
+from loaders import load_positions, load_network, get_connexels, connex_size
 
 
 def run_clustering(dir_path):

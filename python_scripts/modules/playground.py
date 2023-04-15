@@ -8,7 +8,7 @@ from scipy.spatial.distance import pdist
 
 import matplotlib.pyplot as plt
 
-from functions import load_positions
+from loaders import load_positions, load_data_summary
 
 def distance(A: List[int], B: List[int]):
     dx = A[0] - B[0]
@@ -17,23 +17,11 @@ def distance(A: List[int], B: List[int]):
 
 
 def run_playground(dir_path):
-    positions = load_positions(dir_path)
-    pos_only = list(map(lambda X: (X[1], X[2], X[3]), positions))
+    ds = load_data_summary(dir_path + "monitors-histogram/electricActivity.txt")
+    ds2 = list(map(lambda t: t[3], ds))
+    print(ds)
+    plt.plot(ds2)
+    plt.show()
 
-    ddists = []
-    for i in range(len(pos_only)-1):
-        j = i + 1
-        p1 = pos_only[j]
-        p0 = pos_only[i]
 
-        dx = p1[0] - p0[0]
-        dy = p1[1] - p0[1]
-        dz = p1[2] - p0[2]
-
-        ddist = sqrt(dx*dx + dy*dy + dz*dz)
-        ddists.append(ddist)
-
-    ddists = np.array(ddists)
-    #plt.hist(ddist, bins=100)
-    plt.plot(ddists)
-    plt.show()    
+    pass

@@ -140,8 +140,10 @@ int main() {
     setCurrentDirectory();
     const std::filesystem::path calcuiumFolder = "./data/viz-calcium";
     const std::filesystem::path stimulusFolder = "./data/viz-stimulus";
+    const std::filesystem::path disableFolder = "./data/viz-disable";
     //preprocessProperties(calcuiumFolder);
     //preprocessProperties(stimulusFolder);
-    preprocessTimestepProperties(calcuiumFolder, 10000);
+    preprocessProperties(disableFolder);
+    preprocessTimestepProperties(disableFolder, 10000);
 
 }

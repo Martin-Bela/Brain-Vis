@@ -2,6 +2,8 @@ from typing import List, Optional, Dict
 from math import sqrt
 
 import numpy as np
+import struct
+
 
 def debug_print():
     print('debug')
@@ -59,6 +61,59 @@ def load_networks(dir_path: str, steps: list[int], type_of="in"):
     return networks
 
 
+def close_all_files(list):
+    for i in range(len(list)):
+        if list[i] is not None:
+            list[i].close()
+
+
+def load_monitors(dir_path: str, min_i=0, max_i=50000, prefix="0_"):
+    files_count = max_i - min_i 
+    files = [None] * files_count
+    try:
+        for i in range(min_i, max_i):
+            print(f"Opening File {i}")
+            files[i] = open(dir_path + f"monitors/{prefix}{i}.csv", 'r')
+    except IOError as e:
+        print("Error")
+        print(e)
+        close_all_files(files)
+        return None
+    print("All files opened")
+    return files
+
+
+def load_monitors_bin(dir_path: str, timestep: int):
+    filename = f"{dir_path}monitors-bin/timestep{timestep}"
+
+    struct_fmt = "<BxxxffffffffIfI"  # Look more in neuronProperties.hpp file
+    struct_len = struct.calcsize(struct_fmt)
+    struct_unpack = struct.Struct(struct_fmt).unpack_from
+
+    results = []
+    with open(filename, "rb") as f:
+        while True:
+            data = f.read(struct_len)
+            if not data: break
+            s = struct_unpack(data)
+            results.append(s)
+    return results
+
+"""
+In C++ called histograms but it is clashing with meaning of histogram in 
+this script so i call it data_summary
+"""
+def load_data_summary(file_path):
+    data = np.loadtxt(file_path,
+                                delimiter=" ",
+                                comments="#",
+                                dtype={
+                                    'names': ('timestep', 'min', 'sum', 'max', 'mean'),
+                                    'formats': ('i', 'f', 'f', 'f', 'f' )
+                                })
+    return data
+
+
 def get_connexels(positions, network):
     """Gets connexels from positions and from network
 
@@ -93,5 +148,3 @@ def connex_size(c):
     return sqrt(dx*dx + dy*dy + dz*dz)
 
 
-def load_moitors():
-    
