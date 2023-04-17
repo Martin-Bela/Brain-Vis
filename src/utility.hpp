@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <iostream>
 
-const std::filesystem::path dataFolder = "./data/viz-disable";
+const std::filesystem::path dataFolder = "./data/viz-calcium";
 
 inline void setCurrentDirectory() {
     std::filesystem::path path = std::filesystem::current_path();
@@ -19,14 +19,14 @@ inline void setCurrentDirectory() {
     std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
 }
 
-inline bool confirmOperation(const char* msg){
+inline void confirmOperation(const char* msg){
     std::cout << msg << std::endl;
     std::string str;
     std::getline(std::cin, str);
-    if (str != "yes") {
-        return true;
+    if (str == "yes") {
+        return;
     }
-    return false;
+    exit(1);
 }
 
 inline void checkFile(std::istream& stream) {

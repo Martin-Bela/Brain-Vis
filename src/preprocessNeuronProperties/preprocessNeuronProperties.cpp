@@ -87,6 +87,7 @@ std::string attributeToString(int attribute) {
 }
 
 void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestepCount) {
+    confirmOperation("Write \"yes\" if you want to remove all files in monitors-histogram and begin preprocessing.");
     const int pointCount = 50000;
     const int attributeCount = 12;
 
@@ -128,7 +129,6 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
             std::string line = std::format("{} {} {} {}\n",
                 attributeData[j].sum / pointCount, attributeData[j].sum, attributeData[j].max, attributeData[j].min);
 
-            //assert(line.size() == 64);
             outputFiles[j] << line;
         }
     }
