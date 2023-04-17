@@ -76,37 +76,6 @@ namespace { //anonymous namespace
         }
     }
 
-    void loadEdgesInefficient(vtkMutableDirectedGraph& g, const std::map<int, int>& map, int step) {
-        auto path = (dataFolder.string() + "/network/rank_0_step_" + std::to_string(step) + "_in_network.txt");
-        vtkNew<vtkDelimitedTextReader> reader;
-        reader->SetFileName(path.data());
-        reader->DetectNumericColumnsOn();
-        reader->SetFieldDelimiterCharacters(" \t");
-        reader->Update();
-
-        int edge_n = 0;
-        std::map<int, int> edge_count;
-
-        vtkTable* table = reader->GetOutput();
-        for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
-            if (table->GetValue(i, 0).ToString() == "#") continue;
-
-            int from = static_cast<uint16_t>(table->GetValue(i, 1).ToInt() - 1);
-            int to = static_cast<uint16_t>(table->GetValue(i, 3).ToInt() - 1);
-
-            edge_count[10000 * map.at(from) + map.at(to)]++;
-        }
-
-        for (auto&[val, count] : edge_count) {
-            if (count >= 5) {
-                g.AddEdge(val / 10000, val % 10000);
-                edge_n++;
-            }
-        }
-
-        cout << edge_n << endl;
-    }
-
     void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timestep) {
         timestep = timestep / 100 * 100;
         if (timestep % 100 != 0) {
