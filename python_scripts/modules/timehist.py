@@ -2,14 +2,17 @@ from loaders import load_monitors_bin
 import numpy as np
 import matplotlib.pyplot as plt 
 
+from pathlib import Path
+
 from neuron_properties import *
 
-STEPS = 500
+STEPS = 10000
 
 ATTRIBUTES = [
     FIRED,
     FIRED_FRACTION,
     ELECTRIC_ACTIVITY, 
+    SECONDARY_VARIABLE,
     CALCIUM,
     TARGET_CALCIUM,
     SYNAPTIC_INPUT,
@@ -68,12 +71,20 @@ def run_timehist(dir_path):
         neuron_property = NEURON_PROPERTIES[ATTRIBUTES[i]]
         histogram, values = tuple(map(list, (zip(*attribute_histogram))))
         stacked= np.stack(histogram)
+
+        max_val = np.amax(stacked)
+        #print(max_val)
+
+        Path(f"{dir_path}monitors-hist-real").mkdir(parents=True, exist_ok=True)
+        np.savetxt(f"{dir_path}monitors-hist-real/{neuron_property.filename}.txt",   stacked, delimiter=" ", fmt='%i')
+
         stacked = np.rot90(stacked)
-        print(stacked)
+        #print(stacked)
         plt.imshow(stacked, cmap='hot')
         plt.title(neuron_property.name)
         #plt.ylim(neuron_property.min, neuron_property.max)
-        print(i)
-        plt.show()
+        
+        
+        #plt.show()
 
     #print(np.stack(histograms))

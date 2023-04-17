@@ -125,10 +125,10 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
 
         // Print the iteration data into the opened file
         for (int j = 0; j < attributeCount; j++) {
-            std::string line = std::format("{:15},{:15},{:15},{:15}\n",
+            std::string line = std::format("{} {} {} {}\n",
                 attributeData[j].sum / pointCount, attributeData[j].sum, attributeData[j].max, attributeData[j].min);
 
-            assert(line.size() == 64);
+            //assert(line.size() == 64);
             outputFiles[j] << line;
         }
     }
@@ -138,12 +138,12 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
 int main() {
     const int timestepCount = 10000;
     setCurrentDirectory();
-    const std::filesystem::path calcuiumFolder = "./data/viz-calcium";
+    const std::filesystem::path calciumFolder = "./data/viz-calcium";
     const std::filesystem::path stimulusFolder = "./data/viz-stimulus";
     const std::filesystem::path disableFolder = "./data/viz-disable";
-    //preprocessProperties(calcuiumFolder);
+    //preprocessProperties(calciumFolder);
     //preprocessProperties(stimulusFolder);
-    preprocessProperties(disableFolder);
-    preprocessTimestepProperties(disableFolder, 10000);
+    //preprocessProperties(disableFolder);
+    preprocessTimestepProperties(calciumFolder, 10000);
 
 }

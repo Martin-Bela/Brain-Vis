@@ -18,6 +18,8 @@
 #include <QVBoxLayout>
 #include <QVTKOpenGLNativeWidget.h>
 
+#include <vtkDenseArray.h>
+
 #include <QApplication>
 #include <QDockWidget>
 #include <QGridLayout>
@@ -38,6 +40,8 @@
 
 #include <optional>
 #include <QComboBox>
+
+#include "histogramWidget.hpp"
 
 
 namespace { //anonymous namespace
@@ -141,7 +145,7 @@ namespace { //anonymous namespace
 
     vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::map<int, int>& map) {
         const int pointCount = 50000;
-        auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(100 * timestep);
+        auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
         
         BinaryReader<NeuronProperties> reader(path);
         if (reader.count() < pointCount) {
@@ -260,6 +264,58 @@ namespace { //anonymous namespace
         return colors;
     }
 
+    std::string attributeToString(int attribute) {
+    switch (attribute) {
+    case 0: return "fired.txt";
+    case 1: return "firedFraction.txt";
+    case 2: return "electricActivity.txt";
+    case 3: return "secondaryVariable.txt";
+    case 4: return "calcium.txt";
+    case 5: return "targetCalcium.txt";
+    case 6: return "synapticInput.txt";
+    case 7: return "backgroundActivity.txt";
+    case 8: return "grownAxons.txt";
+    case 9: return "connectedAxons.txt";
+    case 10: return "grownDendrites.txt";
+    case 11: return "connectedDendrites.txt";
+    }
+    assert(false);
+    return "";
+}
+
+    void loadHistogramsFromFile(int attributeId, vtkDenseArray<double> &arr, double &max) {
+        auto path = (dataFolder / "monitors-hist-real/").string() + attributeToString(attributeId);
+        vtkNew<vtkDelimitedTextReader> reader;
+        reader->SetFileName(path.data());
+        reader->DetectNumericColumnsOn();
+        reader->SetFieldDelimiterCharacters(" ");
+        reader->SetHaveHeaders(false);
+        reader->Update();
+
+        vtkTable* table = reader->GetOutput();
+
+        int timestepCount = table->GetNumberOfRows();
+        int histogramSize = table->GetNumberOfColumns();
+        //std::cout << "cols: " << table->GetNumberOfColumns() << ", rows:" << table->GetNumberOfRows() << "\n";
+        arr.Resize(timestepCount, histogramSize);
+        arr.SetDimensionLabel(0, "Timestep Count");
+        arr.SetDimensionLabel(1, "Histogram Size");
+        
+        max = 0;
+
+        for (int i = 0; i < table->GetNumberOfRows(); i++) {
+            for (int j = 0; j < table->GetNumberOfColumns(); j++)  {
+                double val = 0;
+                if (table->GetValue(i, j).IsNumeric()) {
+                    val = table->GetValue(i, j).ToInt();
+                }
+                
+                max = std::fmax(max, val);
+                arr.SetValue(i, j, val);
+            }
+        }
+    }
+
     class Visualisation : public QObject {
     public:
         Context context;
@@ -308,7 +364,7 @@ namespace { //anonymous namespace
             graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
 #endif       
 
-#if 1
+#if 0
             vtkNew<vtkMutableDirectedGraph> g;
             // Add the coordinates of the points to the graph
             g->SetPoints(points);
@@ -373,13 +429,21 @@ namespace { //anonymous namespace
             reloadColors(0, 0);
         }
 
+        void setHistogramWidgetPtr(HistogramWidget* histogramWidget) {
+            histogramW = histogramWidget;
+        }
+
     public slots:
         void changeTimestep(int timestep) {
             reloadColors(timestep, lastcolorAttribute);
+            reloadHistogram(lastTimestep, lastcolorAttribute);
         }
 
+        // This is when we are selecting new thing
         void changeColorAttribute(int colorAttribute) {
             reloadColors(lastTimestep, colorAttribute);
+            loadHistogramData(colorAttribute);
+            reloadHistogram(lastTimestep, colorAttribute);
         }
 
         void showEdges(int state) {
@@ -393,6 +457,9 @@ namespace { //anonymous namespace
         }
 
     private:
+
+        HistogramWidget *histogramW = nullptr;
+
         void reloadColors(int timestep, int colorAttribute) {
             lastcolorAttribute = colorAttribute;
             lastTimestep = timestep;
@@ -405,6 +472,22 @@ namespace { //anonymous namespace
             glyph3D->Update();
             context.render();
         }
+
+        void loadHistogramData(int colorAttribute) {
+            
+            loadHistogramsFromFile(colorAttribute, histogramW->getHistogramDataRef(), histogramW->max);
+            histogramW->onLoadHistogram();
+            std::cout << "Histogram data for " << attributeToString(colorAttribute) << " loaded.\n";
+        }
+
+        void reloadHistogram(int timestep, int colorAttribute) {
+            if (!histogramW->isLoaded()) {
+                std::cout << "histogramWidget in Visualization is not loaded!\n";
+                return;
+            }
+            histogramW->setTick(timestep);
+            histogramW->update();
+        }
     };
 
     class Application {
@@ -414,6 +497,8 @@ namespace { //anonymous namespace
             QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
             application.init(argc, argv);
             std::cout << QApplication::applicationDirPath().toStdString() << std::endl;
+
+            //renderArea = new RenderArea;
 
             mainWindow.init();
             mainUI.init();
@@ -426,15 +511,20 @@ namespace { //anonymous namespace
             visualisationWidget->setRenderWindow(visualisation->context.renderWindow);
             mainUI->mainVisDock->addWidget(visualisationWidget.ptr());
 
+            // Set Histogram Widget so Visualization Class knwo about it!
+            visualisation->setHistogramWidgetPtr(mainUI->bottomPanel);
+
             auto attributeNames = std::to_array<const char*>({ "fired", "fired fraction", "activity", "dampening", "current calcium",
                 "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
             for (auto name : attributeNames) {
                 mainUI->comboBox->addItem(name);
             }
 
+
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestep);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
+
         }
 
         int run() {
@@ -452,9 +542,11 @@ namespace { //anonymous namespace
         DeferredInit<Visualisation> visualisation;
         DeferredInit<QVTKOpenGLNativeWidget> visualisationWidget;
 
+        //DeferredInit<HistogramWidget> histogramWidget;
+
     };
 
-}//namepsace
+}//namespace
 
 
 int main(int argc, char** argv) {

@@ -108,8 +108,8 @@ def load_data_summary(file_path):
                                 delimiter=" ",
                                 comments="#",
                                 dtype={
-                                    'names': ('timestep', 'min', 'sum', 'max', 'mean'),
-                                    'formats': ('i', 'f', 'f', 'f', 'f' )
+                                    'names': ( 'min', 'sum', 'max', 'mean'),
+                                    'formats': ('f', 'f', 'f', 'f' )
                                 })
     return data
 
