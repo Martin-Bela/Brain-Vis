@@ -76,7 +76,7 @@ def run_timehist(dir_path):
         #print(max_val)
 
         Path(f"{dir_path}monitors-hist-real").mkdir(parents=True, exist_ok=True)
-        #np.savetxt(f"{dir_path}monitors-hist-real/{neuron_property.filename}.txt",   stacked, delimiter=" ", fmt='%i')
+        np.savetxt(f"{dir_path}monitors-hist-real/{neuron_property.filename}.txt",   stacked, delimiter=" ", fmt='%i')
 
         stacked = np.rot90(stacked)
         #print(stacked)
@@ -84,7 +84,7 @@ def run_timehist(dir_path):
         plt.title(neuron_property.name)
         #plt.ylim(neuron_property.min, neuron_property.max)
         
-        plt.savefig(f"../figs/{neuron_property.filename}_z_hist")
-        plt.show()
+        #plt.savefig(f"../figs/{neuron_property.filename}_z_hist")
+        #plt.show()
 
     #print(np.stack(histograms))

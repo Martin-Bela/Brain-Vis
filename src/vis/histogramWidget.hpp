@@ -18,9 +18,7 @@ class HistogramWidget : public QWidget
 {
     Q_OBJECT
 
-public:
-    double max = 0; 
-
+public:  
 
     explicit HistogramWidget(QWidget *parent = nullptr);
 
@@ -34,12 +32,17 @@ public:
         update();
     }
 
-    vtkDenseArray<double> &getHistogramDataRef() {
+    vtkTable &getHistogramDataRef() {
         return *histogramData.Get();
+    }
+
+    vtkTable &getSummaryDataRef() {
+        return *summaryData.Get();
     }
     
     void onLoadHistogram() {
         loaded = true;
+        recomputeMinMax();
     }
     bool isLoaded() {
         return loaded;
@@ -55,7 +58,11 @@ private:
     bool antialiased = true;
     bool loaded = false;
 
-    vtkNew<vtkDenseArray<double>> histogramData;
+    double max = 0; 
+    double min = 0;
+
+    vtkNew<vtkTable> histogramData;
+    vtkNew<vtkTable> summaryData;
 
 
     int tick = 1;
@@ -63,19 +70,21 @@ private:
     int lastVisibleTick = 500; // TODO Automatically set by Slider
 
 
+    void recomputeMinMax();
+
     int getVisibleTicks() {
         return lastVisibleTick - firstVisibleTick;
     }
 
     int getTimesteps() {
         if (loaded){
-            return histogramData->GetExtent(0).GetEnd();
+            return histogramData->GetNumberOfRows();
         }
         return 0;
     }
     int getBinCount() {
         if (loaded) {
-            return histogramData->GetExtent(1).GetEnd();
+            return histogramData->GetNumberOfColumns();
         }
         return 0;
     }

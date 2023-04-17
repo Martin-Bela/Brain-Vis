@@ -283,7 +283,7 @@ namespace { //anonymous namespace
     return "";
 }
 
-    void loadHistogramsFromFile(int attributeId, vtkDenseArray<double> &arr, double &max) {
+    void loadHistogramsFromFile(int attributeId, vtkTable &widgetTable, vtkTable &summaryData) {
         auto path = (dataFolder / "monitors-hist-real/").string() + attributeToString(attributeId);
         vtkNew<vtkDelimitedTextReader> reader;
         reader->SetFileName(path.data());
@@ -297,23 +297,33 @@ namespace { //anonymous namespace
         int timestepCount = table->GetNumberOfRows();
         int histogramSize = table->GetNumberOfColumns();
         //std::cout << "cols: " << table->GetNumberOfColumns() << ", rows:" << table->GetNumberOfRows() << "\n";
-        arr.Resize(timestepCount, histogramSize);
-        arr.SetDimensionLabel(0, "Timestep Count");
-        arr.SetDimensionLabel(1, "Histogram Size");
+        widgetTable.DeepCopy(table);
         
-        max = 0;
+        
+        // Now we can load 'histogram' plot data
 
-        for (int i = 0; i < table->GetNumberOfRows(); i++) {
-            for (int j = 0; j < table->GetNumberOfColumns(); j++)  {
-                double val = 0;
-                if (table->GetValue(i, j).IsNumeric()) {
-                    val = table->GetValue(i, j).ToInt();
-                }
+        auto path2 = (dataFolder / "monitors-histogram/").string() + attributeToString(attributeId);
+        vtkNew<vtkDelimitedTextReader> reader2;
+        reader2->SetFileName(path.data());
+        reader2->DetectNumericColumnsOn();
+        reader2->SetFieldDelimiterCharacters(" ");
+        reader2->SetHaveHeaders(false);
+        reader2->Update();
+
+        vtkTable* table2 = reader->GetOutput();
+        summaryData.DeepCopy(table2);
+
+        // for (int i = 0; i < table->GetNumberOfRows(); i++) {
+        //     for (int j = 0; j < table->GetNumberOfColumns(); j++)  {
+        //         double val = 0;
+        //         if (table->GetValue(i, j).IsNumeric()) {
+        //             val = table->GetValue(i, j).ToInt();
+        //         }
                 
-                max = std::fmax(max, val);
-                arr.SetValue(i, j, val);
-            }
-        }
+        //         max = std::fmax(max, val);
+        //         arr.SetValue(i, j, val);
+        //     }
+        // }
     }
 
     class Visualisation : public QObject {
@@ -475,7 +485,7 @@ namespace { //anonymous namespace
 
         void loadHistogramData(int colorAttribute) {
             auto t1 = std::chrono::high_resolution_clock::now();
-            loadHistogramsFromFile(colorAttribute, histogramW->getHistogramDataRef(), histogramW->max);
+            loadHistogramsFromFile(colorAttribute, histogramW->getHistogramDataRef(), histogramW->getSummaryDataRef());
             auto t2 = std::chrono::high_resolution_clock::now();
             auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
             std::cout << ms_int.count() << "ms\n";

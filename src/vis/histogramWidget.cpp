@@ -7,30 +7,10 @@
 #include <QPainter>
 #include <QPainterPath>
 
-void getHeatMapColor(float value, float *red, float *green, float *blue)
-{
-  const int NUM_COLORS = 4;
-  static float color[NUM_COLORS][3] = { {0,0,1}, {0,1,0}, {1,1,0}, {1,0,0} };
-    // A static array of 4 colors:  (blue,   green,  yellow,  red) using {r,g,b} for each.
-  
-  int idx1;        // |-- Our desired color will be between these two indexes in "color".
-  int idx2;        // |
-  float fractBetween = 0;  // Fraction between "idx1" and "idx2" where our value is.
-  
-  if(value <= 0)      {  idx1 = idx2 = 0;            }    // accounts for an input <=0
-  else if(value >= 1)  {  idx1 = idx2 = NUM_COLORS-1; }    // accounts for an input >=0
-  else
-  {
-    value = value * (NUM_COLORS-1);        // Will multiply value by 3.
-    idx1  = floor(value);                  // Our desired color will be after this index.
-    idx2  = idx1+1;                        // ... and before this index (inclusive).
-    fractBetween = value - float(idx1);    // Distance between the two indexes (0-1).
-  }
-    
-  *red   = (color[idx2][0] - color[idx1][0])*fractBetween + color[idx1][0];
-  *green = (color[idx2][1] - color[idx1][1])*fractBetween + color[idx1][1];
-  *blue  = (color[idx2][2] - color[idx1][2])*fractBetween + color[idx1][2];
-}
+#define SUMMARY_MEAN 0
+#define SUMMARY_SUM 1
+#define SUMMARY_MAX 2
+#define SUMMARY_MIN 3
 
 //! [0]
 HistogramWidget::HistogramWidget(QWidget *parent)
@@ -56,7 +36,7 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
     int width = geometry().width();
     float tickSize =  (float)width / (float)getVisibleTicks();
 
-    // TODo Use PixMap!
+    // TODO Use PixMap!
     std::cout <<"Bins:" << getBinCount() << ", Steps: " << getVisibleTicks() << "\n";
     float binSize = (float)height / (float)getBinCount();
     std::cout <<"BinSize:" << binSize << ", TimestepSize: " << tickSize << "\n";
@@ -64,13 +44,13 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
         for ( int y = 0; y < getBinCount(); y++) {
             
             
-            double v = histogramData->GetValue(x, y) / max;
+            double v = histogramData->GetValue(x, y).ToDouble() / (max+1);
 
             // sqrt
             //v = sqrt(histogramData->GetValue(x, y)) / sqrt(max);
 
             //log 
-            v = std::fmax(0, log(histogramData->GetValue(x, y)) + 1) / (log(max) + 1);
+            //v = std::fmax(0, log(histogramData->GetValue(x, y).ToInt()) + 1) / (log(max) + 1);
 
             //getHeatMapColor(v, &r, &g , &b);
             //painter.setBrush(QColor(r, g, b, 127));
@@ -110,3 +90,16 @@ void HistogramWidget::setTick(int newTick) {
     //update();
 }
 
+void HistogramWidget::recomputeMinMax() {
+    max = 0;
+    min = INFINITY;
+    for (int i = 0; i < histogramData->GetNumberOfRows(); i++) {
+        for (int j = 0; j < histogramData->GetNumberOfColumns(); j++) {
+            max = std::fmax(max, histogramData->GetValue( i,j).ToDouble());
+            min = std::fmin(min, histogramData->GetValue( i, j).ToDouble());
+        }
+    }
+
+    std::cout << "max: " << max << ", min: " << min<< "\n";
+
+}
