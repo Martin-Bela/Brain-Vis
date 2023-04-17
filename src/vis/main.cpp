@@ -295,9 +295,12 @@ namespace { //anonymous namespace
 
         std::vector<uint16_t> point_map;
 
-        int lastTimestep;
-        int lastcolorAttribute;
+        int currentTimestep;
+        int currentColorAttribute;
         bool edgesVisible = false;
+
+        enum: int { edgesHidden = -1 };
+        int edgeTimestep = edgesHidden;
 
         void loadData() {
             sphere->SetPhiResolution(10);
@@ -377,8 +380,8 @@ namespace { //anonymous namespace
         HistogramWidget *histogramW = nullptr;
 
         void reloadColors(int timestep, int colorAttribute) {
-            lastcolorAttribute = colorAttribute;
-            lastTimestep = timestep;
+            currentColorAttribute = colorAttribute;
+            currentTimestep = timestep;
 
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
 
@@ -390,11 +393,19 @@ namespace { //anonymous namespace
         }
 
         void reloadEdges() {
+            int newEdgeTimestep = edgesVisible ? currentTimestep / 100 * 100 : edgesHidden;
+            if (edgeTimestep == newEdgeTimestep) {
+                return;
+            }
+            edgeTimestep = newEdgeTimestep;
+            std::cout << std::format("Edges reloaded with timestep {}\n", newEdgeTimestep);
+
             vtkNew<vtkMutableDirectedGraph> g;
             g->SetNumberOfVertices(points->GetNumberOfPoints());
             g->SetPoints(points);
+            
             if (edgesVisible) {
-                loadEdges(*g, point_map, lastTimestep);
+                loadEdges(*g, point_map, currentTimestep);
             }
 
             vtkNew<vtkGraphLayout> layout;
@@ -435,17 +446,17 @@ namespace { //anonymous namespace
 
     public slots:
         void changeTimestep(int timestep) {
-            reloadColors(timestep, lastcolorAttribute);
-            reloadHistogram(lastTimestep, lastcolorAttribute);
+            reloadColors(timestep, currentColorAttribute);
+            reloadHistogram(currentTimestep, currentColorAttribute);
             reloadEdges();
             context.render();
         }
 
         // This is when we are selecting new thing
         void changeColorAttribute(int colorAttribute) {
-            reloadColors(lastTimestep, colorAttribute);
+            reloadColors(currentTimestep, colorAttribute);
             loadHistogramData(colorAttribute);
-            reloadHistogram(lastTimestep, colorAttribute);
+            reloadHistogram(currentTimestep, colorAttribute);
             context.render();
         }
 
