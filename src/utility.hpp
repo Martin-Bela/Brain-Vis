@@ -45,3 +45,10 @@ inline void checkFile(std::istream& stream) {
         throw std::runtime_error{ msg.data() };
     }
 }
+
+inline double manhattanDist(double* x, double* y) {
+    auto dx = x[0] - y[0];
+    auto dy = x[1] - y[1];
+    auto dz = x[2] - y[2];
+    return abs(dx) + abs(dy) + abs(dz);
+};

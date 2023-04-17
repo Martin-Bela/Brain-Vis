@@ -28,6 +28,7 @@
 #include <QPointer>
 #include <QPushButton>
 #include <QSlider>
+#include <QComboBox>
 
 #include "context.hpp"
 #include "visUtility.hpp"
@@ -35,25 +36,17 @@
 #include "slider.hpp"
 #include "edge.hpp"
 #include "binaryReader.hpp"
+#include "histogramWidget.hpp"
 
 #include "ui_mainWindow.h"
 
+#include <unordered_map>
 #include <optional>
-#include <QComboBox>
-
-#include "histogramWidget.hpp"
 
 
 namespace { //anonymous namespace
 
-    double manhattanDist(double* x, double* y) {
-        auto dx = x[0] - y[0];
-        auto dy = x[1] - y[1];
-        auto dz = x[2] - y[2];
-        return abs(dx) + abs(dy) + abs(dz);
-    };
-
-    std::map<int, int> loadPositions(vtkPoints& positions) {
+     void loadPositions(vtkPoints& positions, std::vector<uint16_t>& mapping) {
         vtkNew<vtkDelimitedTextReader> reader;
         std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
         reader->SetFileName(path.data());
@@ -62,8 +55,9 @@ namespace { //anonymous namespace
         reader->Update();
 
         int point_index = -1;
-        std::map<int, int> map;
         vtkTable* table = reader->GetOutput();
+
+        mapping.resize(table->GetNumberOfRows());
         //the first row is header
         for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
             if (table->GetValue(i, 0).ToString() == "#") continue;
@@ -78,9 +72,8 @@ namespace { //anonymous namespace
                 positions.InsertNextPoint(point);
                 point_index++;
             }
-            map[(table->GetValue(i, 0)).ToInt() - 1] = point_index;
+            mapping[(table->GetValue(i, 0)).ToInt() - 1] = point_index;
         }
-        return map;
     }
 
     void loadEdgesInefficient(vtkMutableDirectedGraph& g, const std::map<int, int>& map, int step) {
@@ -114,36 +107,24 @@ namespace { //anonymous namespace
         cout << edge_n << endl;
     }
 
-    void loadEdges(vtkMutableDirectedGraph& g, std::map<int, int> map) {
-        auto path = (dataFolder / "network-bin/rank_0_step_0_in_network").string();
+    void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timestep) {
+        timestep = timestep / 100 * 100;
+        if (timestep % 100 != 0) {
+            return;
+        }
+        auto path = (dataFolder / "network-bin/rank_0_step_").string() + std::to_string(timestep * 100) + "_in_network";
         BinaryReader<Edge> reader(path);
 
-        int edge_n = 0;
-        std::map<int, int> edge_count;
-        std::vector<int> edges;
         for (unsigned i = 0; i < reader.count(); i++) {
             Edge edge = reader.read();
-
-            if (edge_count.contains(10000 * map[edge.from] + map[edge.to])) {
-                edge_count[10000 * map[edge.from] + map[edge.to]]++;
+            if (edge.weight <= 3) {
+                break;
             }
-            else {
-                edges.push_back(10000 * map[edge.from] + map[edge.to]);
-                edge_count[10000 * map[edge.from] + map[edge.to]] = 1;
-            }
+            g.AddEdge(edge.from, edge.to);
         }
+   }
 
-        for (int val : edges) {
-            if (edge_count[val] >= 5) {
-                g.AddEdge(val / 10000, val % 10000);
-                edge_n++;
-            }
-        }
-
-        cout << edge_n << endl;
-    }
-
-    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::map<int, int>& map) {
+    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::vector<uint16_t>& map) {
         const int pointCount = 50000;
         auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
         
@@ -168,7 +149,7 @@ namespace { //anonymous namespace
         for (int i = 0; i < pointCount; i++) {
             NeuronProperties neuron = reader.read();
 
-            if (i == 0 || map.at(i) == map.at(i - 1)) continue;
+            if (i == 0 || map[i] == map[i - 1]) continue;
             std::array<unsigned char, 3> color = { 255, 255, 255 };
 
             auto val = (neuron.projection(colorAttribute) - mini) / (maxi - mini);
@@ -337,24 +318,30 @@ namespace { //anonymous namespace
         vtkNew<vtkActor> actor;
         vtkNew<vtkActor> arrowActor;
 
-        std::map<int, int> point_map;
+        vtkNew<vtkGraphToPolyData> graphToPolyData;
+        vtkNew<vtkArrowSource> arrowSource;
+        vtkNew<vtkGlyph3D> arrowGlyph;
+        vtkNew<vtkPolyDataMapper> arrowMapper;
+
+
+        std::vector<uint16_t> point_map;
 
         int lastTimestep;
         int lastcolorAttribute;
-
+        bool edgesVisible = false;
 
         void loadData() {
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
             sphere->SetRadius(0.6);
 
-            point_map = loadPositions(*points);
+            loadPositions(*points, point_map);
             // Add the coordinates of the points to the graph
 #if 0
             vtkNew<vtkMutableDirectedGraph> g;
             g->SetNumberOfVertices(points->GetNumberOfPoints());
             g->SetPoints(points);
-            loadEdges(*g);
+            loadEdges(*g, point_map);
 
             vtkNew<vtkBoostDividedEdgeBundling> edgeBundler;
             edgeBundler->SetInputDataObject(g);
@@ -374,54 +361,25 @@ namespace { //anonymous namespace
             graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
 #endif       
 
-#if 0
-            vtkNew<vtkMutableDirectedGraph> g;
-            // Add the coordinates of the points to the graph
-            g->SetPoints(points);
-            // TODO: Fix! This is terrible
-            for (int i = 0; i < points->GetNumberOfPoints(); i++) {
-                g->AddVertex();
-            }
-            loadEdgesInefficient(*g, point_map, 0);
-            
-            vtkNew<vtkGraphLayout> layout;
-            vtkNew<vtkPassThroughLayoutStrategy> strategy;
-            layout->SetInputData(g);
-            layout->SetLayoutStrategy(strategy);
-
-            vtkNew<vtkPassThroughEdgeStrategy> edgeStrategy;
-            vtkNew<vtkEdgeLayout> edgeLayout;
-            edgeLayout->SetLayoutStrategy(edgeStrategy);
-            edgeLayout->SetInputConnection(layout->GetOutputPort());
-
             // Convert the graph to a polydata
-            vtkNew<vtkGraphToPolyData> graphToPolyData;
-            graphToPolyData->SetInputConnection(edgeLayout->GetOutputPort());
             graphToPolyData->EdgeGlyphOutputOn();
             graphToPolyData->SetEdgeGlyphPosition(0.0);
-            graphToPolyData->Update();
 
             // Make a simple edge arrow for glyphing.
-            vtkNew<vtkArrowSource> arrowSource;
             arrowSource->SetShaftRadius(0.01);
             arrowSource->SetTipRadius(0.02);
             arrowSource->Update();
 
             // Use Glyph3D to repeat the glyph on all edges.
-            vtkNew<vtkGlyph3D> arrowGlyph;
-            arrowGlyph->SetSourceConnection(arrowSource->GetOutputPort());
             arrowGlyph->SetInputConnection(0, graphToPolyData->GetOutputPort(1));
+            arrowGlyph->SetSourceConnection(arrowSource->GetOutputPort());
             arrowGlyph->SetScaleModeToScaleByVector();
-
-            // Add the edge arrow actor to the view.
-            vtkNew<vtkPolyDataMapper> arrowMapper;
-            arrowMapper->SetInputConnection(arrowGlyph->GetOutputPort());
             
             arrowActor->SetMapper(arrowMapper);
             arrowActor->GetProperty()->SetOpacity(0.75);
             arrowActor->GetProperty()->SetColor(namedColors->GetColor3d("DarkGray").GetData());
-#endif
 
+            // Points
             polyData->SetPoints(points);
             
             glyph3D->SetInputData(polyData);
@@ -437,33 +395,12 @@ namespace { //anonymous namespace
 
         void firstRender() {
             reloadColors(0, 0);
+            reloadEdges();
+            context.render();
         }
 
         void setHistogramWidgetPtr(HistogramWidget* histogramWidget) {
             histogramW = histogramWidget;
-        }
-
-    public slots:
-        void changeTimestep(int timestep) {
-            reloadColors(timestep, lastcolorAttribute);
-            reloadHistogram(lastTimestep, lastcolorAttribute);
-        }
-
-        // This is when we are selecting new thing
-        void changeColorAttribute(int colorAttribute) {
-            reloadColors(lastTimestep, colorAttribute);
-            loadHistogramData(colorAttribute);
-            reloadHistogram(lastTimestep, colorAttribute);
-        }
-
-        void showEdges(int state) {
-            if (state == Qt::Checked) {
-                context.renderer->AddActor(arrowActor);
-            }
-            else {
-                context.renderer->RemoveActor(arrowActor);
-            }
-            context.render();
         }
 
     private:
@@ -477,10 +414,35 @@ namespace { //anonymous namespace
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
 
             auto colors = loadColors(timestep, colorAttribute, point_map);
+
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
             glyph3D->Update();
-            context.render();
+        }
+
+        void reloadEdges() {
+            vtkNew<vtkMutableDirectedGraph> g;
+            g->SetNumberOfVertices(points->GetNumberOfPoints());
+            g->SetPoints(points);
+            if (edgesVisible) {
+                loadEdges(*g, point_map, lastTimestep);
+            }
+
+            vtkNew<vtkGraphLayout> layout;
+            vtkNew<vtkPassThroughLayoutStrategy> strategy;
+            layout->SetInputData(g);
+            layout->SetLayoutStrategy(strategy);
+
+            vtkNew<vtkPassThroughEdgeStrategy> edgeStrategy;
+            vtkNew<vtkEdgeLayout> edgeLayout;
+            edgeLayout->SetLayoutStrategy(edgeStrategy);
+            edgeLayout->SetInputConnection(layout->GetOutputPort());
+
+            graphToPolyData->SetInputConnection(edgeLayout->GetOutputPort());
+            graphToPolyData->Update();
+
+            arrowMapper->SetInputConnection(arrowGlyph->GetOutputPort());
+            arrowMapper->Update();            
         }
 
         void loadHistogramData(int colorAttribute) {
@@ -500,6 +462,33 @@ namespace { //anonymous namespace
             }
             histogramW->setTick(timestep);
             histogramW->update();
+        }
+
+    public slots:
+        void changeTimestep(int timestep) {
+            reloadColors(timestep, lastcolorAttribute);
+            reloadHistogram(lastTimestep, lastcolorAttribute);
+            reloadEdges();
+            context.render();
+        }
+
+        // This is when we are selecting new thing
+        void changeColorAttribute(int colorAttribute) {
+            reloadColors(lastTimestep, colorAttribute);
+            loadHistogramData(colorAttribute);
+            reloadHistogram(lastTimestep, colorAttribute);
+            context.render();
+        }
+
+        void showEdges(int state) {
+            if (state == Qt::Checked) {
+                edgesVisible = true;
+            }
+            else {
+                edgesVisible = false;
+            }
+            reloadEdges();
+            context.render();
         }
     };
 
@@ -537,7 +526,6 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestep);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
-
         }
 
         int run() {

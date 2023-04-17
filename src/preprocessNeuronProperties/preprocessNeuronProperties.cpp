@@ -97,7 +97,7 @@ void preprocessTimestepProperties(std::filesystem::path dataFolder, int timestep
     std::filesystem::create_directory(dataFolder / "monitors-histogram");
     for (int i = 0; i < 12; i++) {
         outputFiles[i].open((dataFolder / "monitors-histogram" / attributeToString(i)).string(), std::ios::binary);
-        outputFiles[i] << "# mean sum max min                                             \n";
+        outputFiles[i] << "# mean sum max min\n";
     }
 
     for (int i = 0; i < timestepCount; i++) {
