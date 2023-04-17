@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <iostream>
 
-const std::filesystem::path dataFolder = "./data/viz-calcium";
+const std::filesystem::path dataFolder = "./data/viz-disable";
 
 inline void setCurrentDirectory() {
     std::filesystem::path path = std::filesystem::current_path();
