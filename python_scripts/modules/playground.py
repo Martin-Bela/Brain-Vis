@@ -33,14 +33,16 @@ def run_playground(dir_path):
         #     plt.savefig(f"../figs/{prop.filename}_{sum}")
         #     plt.show()
 
-        dsmin = list(map(lambda t: t[MIN], ds))
-        dsmax = list(map(lambda t: t[MIN], ds))
-        dsmean = list(map(lambda t: t[MIN], ds))
+        # ds_all = list(map(lambda t: (t[MAX], t[MEAN], t[MIN]), ds))
+        # plt.plot(ds_all)
+        # plt.title(f"{prop.name} - ALL")
+        # plt.savefig(f"../figs/{prop.filename}_z_all")
+        # plt.show()
 
-        ds_all = list(map(lambda t: (t[MAX], t[MEAN], t[MIN]), ds))
-        plt.plot(ds_all)
+        ds_all_first500 = list(map(lambda t: (t[MAX], t[MEAN], t[MIN]), ds))[:500]
+        plt.plot(ds_all_first500)
         plt.title(f"{prop.name} - ALL")
-        plt.savefig(f"../figs/{prop.filename}_z_all")
+        plt.savefig(f"../figs/{prop.filename}_z_all_500")
         plt.show()
         
         

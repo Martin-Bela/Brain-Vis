@@ -56,7 +56,7 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
     int width = geometry().width();
     float tickSize =  (float)width / (float)getVisibleTicks();
 
-    // TODo Ue PixMap!
+    // TODo Use PixMap!
     std::cout <<"Bins:" << getBinCount() << ", Steps: " << getVisibleTicks() << "\n";
     float binSize = (float)height / (float)getBinCount();
     std::cout <<"BinSize:" << binSize << ", TimestepSize: " << tickSize << "\n";

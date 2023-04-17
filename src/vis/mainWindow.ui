@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1130</width>
+    <width>1117</width>
     <height>614</height>
    </rect>
   </property>
@@ -26,20 +26,56 @@
      </layout>
     </item>
     <item>
-     <widget class="HistogramWidget" name="bottomPanel" native="true">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>4092</width>
-        <height>128</height>
-       </size>
-      </property>
-      <property name="autoFillBackground">
-       <bool>false</bool>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>7</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="HistogramWidget" name="bottomPanel" native="true">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>4092</width>
+          <height>128</height>
+         </size>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>7</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QSlider" name="slider">
@@ -118,11 +154,6 @@
          <item>
           <property name="text">
            <string>Histogram</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string/>
           </property>
          </item>
         </widget>
