@@ -8,11 +8,6 @@
 #include <QPainterPath>
 #include <QMouseEvent>
 
-#define SUMMARY_MEAN 0
-#define SUMMARY_SUM 1
-#define SUMMARY_MAX 2
-#define SUMMARY_MIN 3
-
 //! [0]
 HistogramWidget::HistogramWidget(QWidget *parent)
     : QWidget(parent)
@@ -105,18 +100,28 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
 }
 
 void HistogramWidget::mousePressEvent(QMouseEvent* e) {
-    if (e->button() == Qt::LeftButton) {
+    if (e->buttons() & Qt::LeftButton) {
         float tickSize = (float)geometry().width() / (float)getVisibleTicks();
-        tick = round(e->localPos().x() / tickSize) + firstVisibleTick;
+        tick = round(e->position().x() / tickSize) + firstVisibleTick;
         std::cout << "First tick: " << firstVisibleTick << std::endl;
         std::cout << "Timestep: " << tick << std::endl;
-        histogramClicked(tick);
+        histogramCursorMoved(tick);
     }
 }
 
 
 void HistogramWidget::mouseReleaseEvent(QMouseEvent*) {
 
+}
+
+void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
+    if (e->buttons() & Qt::LeftButton) {
+        float tickSize = (float)geometry().width() / (float)getVisibleTicks();
+        tick = round(e->position().x() / tickSize) + firstVisibleTick;
+        std::cout << "First tick: " << firstVisibleTick << std::endl;
+        std::cout << "Timestep: " << tick << std::endl;
+        histogramCursorMoved(tick);
+    }
 }
 
 

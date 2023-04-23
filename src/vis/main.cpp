@@ -1,4 +1,5 @@
 #include <vtkActor.h>
+#include <vtkDenseArray.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkPointData.h>
@@ -15,10 +16,9 @@
 #include <vtkPassThroughEdgeStrategy.h>
 #include <vtkPassThroughLayoutStrategy.h>
 #include <vtkEdgeLayout.h>
-#include <QVBoxLayout>
-#include <QVTKOpenGLNativeWidget.h>
+#include <vtkSmartPointer.h>
 
-#include <vtkDenseArray.h>
+#include <QVTKOpenGLNativeWidget.h>
 
 #include <QApplication>
 #include <QDockWidget>
@@ -30,6 +30,7 @@
 #include <QSlider>
 #include <QComboBox>
 #include <QString>
+#include <QVBoxLayout>
 
 #include "context.hpp"
 #include "visUtility.hpp"
@@ -234,7 +235,7 @@ namespace { //anonymous namespace
     return "";
 }
 
-    void loadHistogramsFromFile(int attributeId, vtkTable &widgetTable, vtkTable &summaryData) {
+    void loadHistogramsFromFile(int attributeId, vtkSmartPointer<vtkTable> &widgetTable, vtkSmartPointer<vtkTable> &summaryData) {
         auto path = (dataFolder / "monitors-hist-real/").string() + attributeToString(attributeId);
         vtkNew<vtkDelimitedTextReader> reader;
         reader->SetFileName(path.data());
@@ -243,24 +244,21 @@ namespace { //anonymous namespace
         reader->SetHaveHeaders(false);
         reader->Update();
 
-        vtkTable* table = reader->GetOutput();
+        widgetTable = reader->GetOutput();
 
-        int timestepCount = table->GetNumberOfRows();
-        int histogramSize = table->GetNumberOfColumns();
-        //std::cout << "cols: " << table->GetNumberOfColumns() << ", rows:" << table->GetNumberOfRows() << "\n";
-        widgetTable.DeepCopy(table);
-        
+        int timestepCount = widgetTable->GetNumberOfRows();
+        int histogramSize = widgetTable->GetNumberOfColumns();
+        //std::cout << "cols: " << table->GetNumberOfColumns() << ", rows:" << table->GetNumberOfRows() << "\n";        
         
         // Now we can load 'histogram' plot data
 
         auto path2 = (dataFolder / "monitors-histogram/").string() + attributeToString(attributeId);
         vtkNew<vtkDelimitedTextReader> reader2;
         reader2->SetFileName(path2.data());
-        reader2->SetFieldDelimiterCharacters(",");
+        reader2->SetFieldDelimiterCharacters(" ");
         reader2->Update();
 
-        vtkTable* table2 = reader2->GetOutput();
-        summaryData.DeepCopy(table2);
+        summaryData = reader2->GetOutput();
     }
 
     class Visualisation : public QObject {
@@ -414,11 +412,13 @@ namespace { //anonymous namespace
 
         void loadHistogramData(int colorAttribute) {
             auto t1 = std::chrono::high_resolution_clock::now();
-            loadHistogramsFromFile(colorAttribute, histogramW->getHistogramDataRef(), histogramW->getSummaryDataRef());
+
+            vtkSmartPointer<vtkTable> histogramData, summaryData;
+            loadHistogramsFromFile(colorAttribute, histogramData, summaryData);
+            histogramW->setData(std::move(histogramData), std::move(summaryData));
+
             auto t2 = std::chrono::high_resolution_clock::now();
-            auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
-            std::cout << ms_int.count() << "ms\n";
-            histogramW->onLoadHistogram();
+            std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
             std::cout << "Histogram data for " << attributeToString(colorAttribute) << " loaded.\n";
         }
 
@@ -532,7 +532,7 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->comboBox_2, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeDrawMode);
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestepRange);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
-            QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramClicked, visualisation.ptr(), &Visualisation::changeTimestep);
+            QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestep);
         }
 
         int run() {

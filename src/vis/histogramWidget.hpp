@@ -14,6 +14,7 @@
 #include <vtkTable.h>
 #include <vtkDenseArray.h>
 #include <vtkNew.h>
+#include <vtkSmartPointer.h>
 
 //! [0]
 class HistogramWidget : public QWidget
@@ -39,12 +40,16 @@ public:
     vtkTable &getSummaryDataRef() {
         return *summaryData.Get();
     }
-    
-    void onLoadHistogram() {
+
+    void setData(vtkSmartPointer<vtkTable> histogramData, vtkSmartPointer<vtkTable> summaryData) {
+        this->histogramData = std::move(histogramData);
+        this->summaryData = std::move(summaryData);
+
         loaded = true;
         recomputeMinMax();
         recomputeSummaryMinMax();
     }
+    
     bool isLoaded() {
         return loaded;
     }
@@ -55,7 +60,7 @@ public:
    
 
 signals:
-    void histogramClicked(int newValue);
+    void histogramCursorMoved(int newValue);
 
 
 protected:
@@ -63,6 +68,7 @@ protected:
 
     void mousePressEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
+    void mouseMoveEvent(QMouseEvent*) override;
 
 private:
     bool antialiased = true;
@@ -73,8 +79,8 @@ private:
     double sMax = 0;
     double sMin = 0;
 
-    vtkNew<vtkTable> histogramData;
-    vtkNew<vtkTable> summaryData;
+    vtkSmartPointer<vtkTable> histogramData;
+    vtkSmartPointer<vtkTable> summaryData;
     bool summaryDrawMode = false;
 
     int tick = 1;
