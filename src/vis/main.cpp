@@ -29,6 +29,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QComboBox>
+#include <QString>
 
 #include "context.hpp"
 #include "visUtility.hpp"
@@ -516,6 +517,24 @@ namespace { //anonymous namespace
             for (auto name : attributeNames) {
                 mainUI->comboBox->addItem(name);
             }
+
+           
+            mainUI->gridLayout->removeWidget(mainUI->slider);
+            mainUI->gridLayout->addWidget(mainUI->slider, 0, 0, 1, 3);     
+            
+            QLabel* label0 = new QLabel();
+            label0->setText("0");
+            label0->setFixedHeight(16);
+            mainUI->gridLayout->addWidget(label0, 1, 0, 1, 1, Qt::AlignLeft);
+            QLabel* label1 = new QLabel();
+            label1->setText("5000");
+            label1->setFixedHeight(16);
+            mainUI->gridLayout->addWidget(label1, 1, 1, 1, 1, Qt::AlignHCenter);
+            QLabel* label2 = new QLabel();
+            label2->setText("10000");
+            label2->setFixedHeight(16);
+            mainUI->gridLayout->addWidget(label2, 1, 2, 1, 1, Qt::AlignRight);
+
 
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestepRange);

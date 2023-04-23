@@ -46,23 +46,33 @@
      </layout>
     </item>
     <item>
-     <widget class="QSlider" name="slider">
-      <property name="maximum">
-       <number>9999</number>
+     <layout class="QGridLayout" name="gridLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
       </property>
-      <property name="value">
-       <number>3</number>
+      <property name="spacing">
+       <number>0</number>
       </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="tickPosition">
-       <enum>QSlider::TicksBelow</enum>
-      </property>
-      <property name="tickInterval">
-       <number>250</number>
-      </property>
-     </widget>
+      <item row="0" column="0">
+       <widget class="QSlider" name="slider">
+        <property name="maximum">
+         <number>9999</number>
+        </property>
+        <property name="value">
+         <number>3</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="tickPosition">
+         <enum>QSlider::TicksBelow</enum>
+        </property>
+        <property name="tickInterval">
+         <number>250</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
