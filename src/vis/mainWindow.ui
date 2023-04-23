@@ -47,11 +47,8 @@
     </item>
     <item>
      <layout class="QGridLayout" name="gridLayout">
-      <property name="sizeConstraint">
-       <enum>QLayout::SetMinimumSize</enum>
-      </property>
-      <property name="spacing">
-       <number>0</number>
+      <property name="verticalSpacing">
+       <number>1</number>
       </property>
       <item row="0" column="0">
        <widget class="QSlider" name="slider">
@@ -117,33 +114,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QComboBox" name="comboBox_2">
-         <item>
-          <property name="text">
-           <string>Max</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Mean</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Min</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Sum</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Histogram</string>
-          </property>
-         </item>
-        </widget>
+        <widget class="QComboBox" name="comboBox_2"/>
        </item>
       </layout>
      </item>

@@ -255,26 +255,12 @@ namespace { //anonymous namespace
 
         auto path2 = (dataFolder / "monitors-histogram/").string() + attributeToString(attributeId);
         vtkNew<vtkDelimitedTextReader> reader2;
-        reader2->SetFileName(path.data());
-        reader2->DetectNumericColumnsOn();
-        reader2->SetFieldDelimiterCharacters(" ");
-        reader2->SetHaveHeaders(false);
+        reader2->SetFileName(path2.data());
+        reader2->SetFieldDelimiterCharacters(",");
         reader2->Update();
 
-        vtkTable* table2 = reader->GetOutput();
+        vtkTable* table2 = reader2->GetOutput();
         summaryData.DeepCopy(table2);
-
-        // for (int i = 0; i < table->GetNumberOfRows(); i++) {
-        //     for (int j = 0; j < table->GetNumberOfColumns(); j++)  {
-        //         double val = 0;
-        //         if (table->GetValue(i, j).IsNumeric()) {
-        //             val = table->GetValue(i, j).ToInt();
-        //         }
-                
-        //         max = std::fmax(max, val);
-        //         arr.SetValue(i, j, val);
-        //     }
-        // }
     }
 
     class Visualisation : public QObject {
@@ -468,6 +454,11 @@ namespace { //anonymous namespace
             changeTimestep(sliderValue);
         }
 
+        void changeDrawMode(int modeType) {
+            histogramW->changeDrawMode(modeType == 1);
+            reloadHistogram(currentTimestep, currentColorAttribute);
+        }
+
         // This is when we are selecting new thing
         void changeColorAttribute(int colorAttribute) {
             reloadColors(currentTimestep, colorAttribute);
@@ -517,8 +508,9 @@ namespace { //anonymous namespace
             for (auto name : attributeNames) {
                 mainUI->comboBox->addItem(name);
             }
+            mainUI->comboBox_2->addItem("Histogram");
+            mainUI->comboBox_2->addItem("Summary");
 
-           
             mainUI->gridLayout->removeWidget(mainUI->slider);
             mainUI->gridLayout->addWidget(mainUI->slider, 0, 0, 1, 3);     
             
@@ -531,12 +523,13 @@ namespace { //anonymous namespace
             label1->setFixedHeight(16);
             mainUI->gridLayout->addWidget(label1, 1, 1, 1, 1, Qt::AlignHCenter);
             QLabel* label2 = new QLabel();
-            label2->setText("10000");
+            label2->setText("9999");
             label2->setFixedHeight(16);
             mainUI->gridLayout->addWidget(label2, 1, 2, 1, 1, Qt::AlignRight);
 
 
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
+            QObject::connect(mainUI->comboBox_2, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeDrawMode);
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestepRange);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
             QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramClicked, visualisation.ptr(), &Visualisation::changeTimestep);

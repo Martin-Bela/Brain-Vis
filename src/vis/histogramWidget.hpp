@@ -43,9 +43,14 @@ public:
     void onLoadHistogram() {
         loaded = true;
         recomputeMinMax();
+        recomputeSummaryMinMax();
     }
     bool isLoaded() {
         return loaded;
+    }
+
+    void changeDrawMode(bool isSummaryMode) {
+        summaryDrawMode = isSummaryMode;
     }
    
 
@@ -65,17 +70,24 @@ private:
 
     double max = 0; 
     double min = 0;
+    double sMax = 0;
+    double sMin = 0;
 
     vtkNew<vtkTable> histogramData;
     vtkNew<vtkTable> summaryData;
-
+    bool summaryDrawMode = false;
 
     int tick = 1;
     int firstVisibleTick = 0;
     int lastVisibleTick = 500; // TODO Automatically set by Slider
 
+    void paintHistogram(QPainter& painter);
+    void paintSummary(QPainter& painter);
 
+    void recomputeSummaryMinMax();
     void recomputeMinMax();
+
+    int getYPos(double value);
 
     int getVisibleTicks() {
         return lastVisibleTick - firstVisibleTick;
