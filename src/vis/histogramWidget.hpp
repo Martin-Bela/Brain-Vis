@@ -8,6 +8,8 @@
 #include <QPen>
 #include <QPixmap>
 #include <QWidget>
+#include <QObject>
+
 
 #include <vtkTable.h>
 #include <vtkDenseArray.h>
@@ -17,6 +19,7 @@
 class HistogramWidget : public QWidget
 {
     Q_OBJECT
+
 
 public:  
 
@@ -47,6 +50,11 @@ public:
     bool isLoaded() {
         return loaded;
     }
+   
+
+signals:
+    void histogramClicked(int newValue);
+
 
 protected:
     void paintEvent(QPaintEvent *event) override;

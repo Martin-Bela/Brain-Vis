@@ -492,7 +492,7 @@ namespace { //anonymous namespace
             visualisationWidget.init();
             visualisationWidget->setRenderWindow(visualisation->context.renderWindow);
             mainUI->mainVisDock->addWidget(visualisationWidget.ptr());
-
+            
             // Set Histogram Widget so Visualization Class knwo about it!
             visualisation->setHistogramWidgetPtr(mainUI->bottomPanel);
 
@@ -502,17 +502,16 @@ namespace { //anonymous namespace
                 mainUI->comboBox->addItem(name);
             }
 
-
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestep);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
+            QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramClicked, visualisation.ptr(), &Visualisation::changeTimestep);
         }
 
         int run() {
             mainWindow->show();
 
             visualisation->firstRender();
-
             return application->exec();
         }
 

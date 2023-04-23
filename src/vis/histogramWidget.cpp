@@ -6,6 +6,7 @@
 
 #include <QPainter>
 #include <QPainterPath>
+#include <QMouseEvent>
 
 #define SUMMARY_MEAN 0
 #define SUMMARY_SUM 1
@@ -74,11 +75,14 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
     
 }
 
-
-
-void HistogramWidget::mousePressEvent(QMouseEvent*) {
-
+void HistogramWidget::mousePressEvent(QMouseEvent* e) {
+    if (e->button() == Qt::LeftButton) {
+        float tickSize = (float)geometry().width() / (float)getVisibleTicks();
+        tick = round(e->localPos().x() / tickSize);
+        histogramClicked(tick);
+    }
 }
+
 
 void HistogramWidget::mouseReleaseEvent(QMouseEvent*) {
 
@@ -87,7 +91,6 @@ void HistogramWidget::mouseReleaseEvent(QMouseEvent*) {
 
 void HistogramWidget::setTick(int newTick) {
     tick = newTick;
-    //update();
 }
 
 void HistogramWidget::recomputeMinMax() {
