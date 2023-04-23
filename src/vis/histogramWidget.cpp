@@ -38,7 +38,6 @@ void HistogramWidget::paintSummary(QPainter& painter) {
         int x0 = (i - firstVisibleTick) * tickSize;
         int x1 = (i + 1 - firstVisibleTick) * tickSize;
 
-        /*
         painter.setPen(red);
         painter.drawLine(x0, getYPos(summaryData->GetValue(i + 1, 2).ToDouble()),
                          x1, getYPos(summaryData->GetValue(i + 2, 2).ToDouble()));
@@ -46,7 +45,6 @@ void HistogramWidget::paintSummary(QPainter& painter) {
         painter.setPen(blue);
         painter.drawLine(x0, getYPos(summaryData->GetValue(i + 1, 3).ToDouble()),
                          x1, getYPos(summaryData->GetValue(i + 2, 3).ToDouble()));
-        */
 
         painter.setPen(black);
         painter.drawLine(x0, getYPos(summaryData->GetValue(i + 1, 0).ToDouble()),
@@ -133,8 +131,8 @@ void HistogramWidget::recomputeSummaryMinMax() {
     sMax = -INFINITY;
     sMin = INFINITY;
     for (int i = 1; i < summaryData->GetNumberOfRows(); i++) {
-        sMax = std::fmax(sMax, summaryData->GetValue(i, 0).ToDouble());
-        sMin = std::fmin(sMin, summaryData->GetValue(i, 0).ToDouble());
+        sMax = std::fmax(sMax, summaryData->GetValue(i, 2).ToDouble());
+        sMin = std::fmin(sMin, summaryData->GetValue(i, 3).ToDouble());
     }
 }
 
