@@ -448,8 +448,23 @@ namespace { //anonymous namespace
         void changeTimestep(int timestep) {
             reloadColors(timestep, currentColorAttribute);
             reloadHistogram(currentTimestep, currentColorAttribute);
-            reloadEdges();
+            // reloadEdges();
             context.render();
+        }
+
+        // Used for changing the sliding window of the histogramWidget
+        void changeTimestepRange(int sliderValue) {
+            const int minVal = 0;
+            const int maxVal = 9999;
+
+            int lowerBoundary = std::max(sliderValue - 250, minVal);
+            int upperBoundary = std::min(sliderValue + 250, maxVal);
+
+            if (lowerBoundary == minVal) upperBoundary = 500;
+            if (upperBoundary == maxVal) lowerBoundary = maxVal - 500;
+            histogramW->setVisibleRange(lowerBoundary, upperBoundary);
+
+            changeTimestep(sliderValue);
         }
 
         // This is when we are selecting new thing
@@ -503,7 +518,7 @@ namespace { //anonymous namespace
             }
 
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
-            QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestep);
+            QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestepRange);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
             QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramClicked, visualisation.ptr(), &Visualisation::changeTimestep);
         }

@@ -26,13 +26,10 @@ public:
     explicit HistogramWidget(QWidget *parent = nullptr);
 
     void setTick(int tick);
-    void setFirstVisibleTick(int tick) {
-        firstVisibleTick = tick;
-        update();
-    }
-    void setLastVisibleTick(int tick) {
-        lastVisibleTick = tick;
-        update();
+
+    void setVisibleRange(int firstTick, int lastTick) {
+        firstVisibleTick = firstTick;
+        lastVisibleTick = lastTick;
     }
 
     vtkTable &getHistogramDataRef() {
