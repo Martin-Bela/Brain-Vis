@@ -4,7 +4,7 @@
 
 #include <array>
 
-//#define INVERSED 
+#define INVERSED 
 
 constexpr QColor rgb(double r, double g, double b) {
 #ifdef INVERSED

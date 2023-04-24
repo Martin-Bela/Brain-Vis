@@ -94,7 +94,7 @@ namespace { //anonymous namespace
         }
    }
 
-    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::vector<uint16_t>& map) {
+    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::vector<uint16_t>& map, double mini, double maxi) {
         const int pointCount = 50000;
         auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
         
@@ -107,14 +107,6 @@ namespace { //anonymous namespace
         vtkNew<vtkUnsignedCharArray> colors;
         colors->SetName("colors");
         colors->SetNumberOfComponents(3);
-
-        float mini = INFINITY, maxi = -INFINITY;
-        for (int i = 0; i < pointCount; i++) {
-            NeuronProperties neuron = reader.read();
-            mini = std::min(neuron.projection(colorAttribute), mini);
-            maxi = std::max(neuron.projection(colorAttribute), maxi);
-        }
-        reader.setPos(0);
 
         for (int i = 0; i < pointCount; i++) {
             NeuronProperties neuron = reader.read();
@@ -286,6 +278,9 @@ namespace { //anonymous namespace
         enum: int { edgesHidden = -1 };
         int edgeTimestep = edgesHidden;
 
+        HistogramWidget* histogramW = nullptr;
+        vtkSmartPointer<vtkTable> summaryData;
+
         void loadData() {
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
@@ -350,9 +345,9 @@ namespace { //anonymous namespace
         }
 
         void firstRender() {
+            loadHistogramData(0);
             reloadColors(0, 0);
             reloadEdges();
-            loadHistogramData(0);
             context.render();
         }
 
@@ -362,15 +357,14 @@ namespace { //anonymous namespace
 
     private:
 
-        HistogramWidget *histogramW = nullptr;
-
         void reloadColors(int timestep, int colorAttribute) {
             currentColorAttribute = colorAttribute;
             currentTimestep = timestep;
 
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
 
-            auto colors = loadColors(timestep, colorAttribute, point_map);
+            auto colors = loadColors(timestep, colorAttribute, point_map,
+                summaryData->GetValue(timestep + 1, 3).ToDouble(), summaryData->GetValue(timestep + 1, 2).ToDouble());
 
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
@@ -413,9 +407,9 @@ namespace { //anonymous namespace
         void loadHistogramData(int colorAttribute) {
             auto t1 = std::chrono::high_resolution_clock::now();
 
-            vtkSmartPointer<vtkTable> histogramData, summaryData;
+            vtkSmartPointer<vtkTable> histogramData;
             loadHistogramsFromFile(colorAttribute, histogramData, summaryData);
-            histogramW->setData(std::move(histogramData), std::move(summaryData));
+            histogramW->setData(std::move(histogramData), summaryData);
 
             auto t2 = std::chrono::high_resolution_clock::now();
             std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
@@ -435,7 +429,7 @@ namespace { //anonymous namespace
         void changeTimestep(int timestep) {
             reloadColors(timestep, currentColorAttribute);
             reloadHistogram(currentTimestep, currentColorAttribute);
-            // reloadEdges();
+            reloadEdges();
             context.render();
         }
 
@@ -459,7 +453,6 @@ namespace { //anonymous namespace
             reloadHistogram(currentTimestep, currentColorAttribute);
         }
 
-        // This is when we are selecting new thing
         void changeColorAttribute(int colorAttribute) {
             reloadColors(currentTimestep, colorAttribute);
             loadHistogramData(colorAttribute);

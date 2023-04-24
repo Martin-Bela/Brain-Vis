@@ -116,14 +116,14 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
     case Histogram:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
-            paintMinMaxLabels(painter, Qt::white);
+            paintMinMaxLabels(painter, Qt::black);
         break;
     case Both:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
         paintSummary(painter, false);
         painter.setPen(QPen({ 0, 255, 0 }));
-            paintMinMaxLabels(painter, Qt::white);
+            paintMinMaxLabels(painter, Qt::black);
         break;
     }
 
