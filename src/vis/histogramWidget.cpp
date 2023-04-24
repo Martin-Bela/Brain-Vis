@@ -8,6 +8,8 @@
 #include <QPainterPath>
 #include <QMouseEvent>
 
+#include "magmaColormap.hpp"
+
 //! [0]
 HistogramWidget::HistogramWidget(QWidget *parent)
     : QWidget(parent)
@@ -23,9 +25,12 @@ int HistogramWidget::getYPos(double value) {
     return val;
 }
 
-void HistogramWidget::paintSummary(QPainter& painter) {
+void HistogramWidget::paintSummary(QPainter& painter, bool redraw) {
     float tickSize = (float)geometry().width() / (float)getVisibleTicks();
-    painter.fillRect(0, 0, geometry().width(), geometry().height(), QBrush({ 255, 255, 255 }));
+    
+    if (redraw) {
+        painter.fillRect(0, 0, geometry().width(), geometry().height(), QBrush({ 255, 255, 255 }));
+    }
 
     QPen black = QPen({ 0,   0, 0   });
     QPen blue  = QPen({ 0,   0, 255 });
@@ -62,16 +67,34 @@ void HistogramWidget::paintHistogram(QPainter &painter) {
     // TODO Use PixMap!
     for (int x = firstVisibleTick; x <= lastVisibleTick; x++) {
         for (int y = 0; y < getBinCount(); y++) {
+            int y_pos = getBinCount() - y - 1;
             double v = histogramData->GetValue(x, y).ToDouble() / (max + 1);
-            QColor color;
-            float h = (1.f - v) * 0.85f + 0.15f;
-            float s = 1.f;
-            float l = v * 0.5f + 0.25f;
-            color.setHsl(h * 255, s * 255, l * 255);
+
+            if (logarithmicScaleEnabled) {
+                v = std::fmax(0, log(histogramData->GetValue(x, y).ToInt()) + 1) / (log(max) + 1);
+            }
+
+            QColor color = getMagmaColor(v);
+            //float h = (1.f - v) * 0.85f + 0.15f;
+            //float s = 1.f;
+            //float l = v * 0.5f + 0.25f;
+            //color.setHsl(h * 255, s * 255, l * 255);
             painter.setBrush(QBrush(color));
-            painter.fillRect((x - firstVisibleTick) * tickSize, y * binSize, tickSize + 1, binSize + 1, painter.brush());
+            painter.fillRect((x - firstVisibleTick) * tickSize, y_pos * binSize, tickSize + 1, binSize + 1, painter.brush());
         }
     }
+
+}
+
+void HistogramWidget::paintMinMaxLabels(QPainter &painter, QColor color) {  
+        // draw Text
+    int xOffset = 5;
+    int yOffset = 10;
+
+    painter.setPen(color);
+    painter.drawText(xOffset, yOffset, std::format("{}", sMax).c_str());
+    painter.drawText(xOffset, geometry().height() - 2, std::format("{}", sMin).c_str());
+
 }
 
 void HistogramWidget::paintEvent(QPaintEvent * /* event */)
@@ -82,14 +105,26 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
     QPainter painter(this);
 
     if (antialiased) painter.setRenderHint(QPainter::Antialiasing, true);
-
-    if (summaryDrawMode) {
-        paintSummary(painter);
+    
+    //std::cout << "DrawMode: " << drawMode <<" \n";
+    switch (drawMode) {
+    case Summary:
+        paintSummary(painter, true);
         painter.setPen(QPen({ 0, 255, 0 }));
-    }
-    else {
+            paintMinMaxLabels(painter, Qt::black);
+        break;
+    case Histogram:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
+            paintMinMaxLabels(painter, Qt::white);
+        break;
+    case Both:
+        paintHistogram(painter);
+        painter.setPen(QPen({ 255, 255, 255 }));
+        paintSummary(painter, false);
+        painter.setPen(QPen({ 0, 255, 0 }));
+            paintMinMaxLabels(painter, Qt::white);
+        break;
     }
 
     float tickSize =  (float) geometry().width() / (float) getVisibleTicks();

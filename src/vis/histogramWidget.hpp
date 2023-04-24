@@ -16,6 +16,14 @@
 #include <vtkNew.h>
 #include <vtkSmartPointer.h>
 
+
+
+enum HistogramDrawMode {
+    Histogram = 0,
+    Summary = 1,
+    Both = 2,
+};
+
 //! [0]
 class HistogramWidget : public QWidget
 {
@@ -54,8 +62,9 @@ public:
         return loaded;
     }
 
-    void changeDrawMode(bool isSummaryMode) {
-        summaryDrawMode = isSummaryMode;
+    void changeDrawMode(HistogramDrawMode drawModeParam) {
+        std::cout << "DrawMode: " << drawMode <<" \n";
+        drawMode = drawModeParam;
     }
    
 
@@ -79,16 +88,19 @@ private:
     double sMax = 0;
     double sMin = 0;
 
+    bool logarithmicScaleEnabled = false;
+
     vtkSmartPointer<vtkTable> histogramData;
     vtkSmartPointer<vtkTable> summaryData;
-    bool summaryDrawMode = false;
+    HistogramDrawMode drawMode = Histogram;
 
     int tick = 1;
     int firstVisibleTick = 0;
     int lastVisibleTick = 500; // TODO Automatically set by Slider
 
     void paintHistogram(QPainter& painter);
-    void paintSummary(QPainter& painter);
+    void paintSummary(QPainter& painter, bool redraw);
+    void paintMinMaxLabels(QPainter &painter, QColor color);
 
     void recomputeSummaryMinMax();
     void recomputeMinMax();

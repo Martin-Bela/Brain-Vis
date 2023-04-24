@@ -455,7 +455,7 @@ namespace { //anonymous namespace
         }
 
         void changeDrawMode(int modeType) {
-            histogramW->changeDrawMode(modeType == 1);
+            histogramW->changeDrawMode((HistogramDrawMode)modeType);
             reloadHistogram(currentTimestep, currentColorAttribute);
         }
 
@@ -510,6 +510,7 @@ namespace { //anonymous namespace
             }
             mainUI->comboBox_2->addItem("Histogram");
             mainUI->comboBox_2->addItem("Summary");
+            mainUI->comboBox_2->addItem("Both");
 
             mainUI->gridLayout->removeWidget(mainUI->slider);
             mainUI->gridLayout->addWidget(mainUI->slider, 0, 0, 1, 3);     
