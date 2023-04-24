@@ -116,7 +116,7 @@
        <item>
         <widget class="QCheckBox" name="logScaleCheckbox">
          <property name="text">
-          <string>Log Scale</string>
+          <string>Histogram Log Scale</string>
          </property>
         </widget>
        </item>

@@ -353,6 +353,7 @@ namespace { //anonymous namespace
         void firstRender() {
             reloadColors(0, 0);
             reloadEdges();
+            loadHistogramData(0);
             context.render();
         }
 
