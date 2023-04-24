@@ -2,7 +2,7 @@
 
 #include <QColor>
 
-#define INVERSED 
+//#define INVERSED 
 
 #ifdef INVERSED
     #define rgb(r, g, b) QColor(255 - r * 255., 255 - g * 255., 255 - b * 255.)

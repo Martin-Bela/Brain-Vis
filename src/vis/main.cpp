@@ -477,6 +477,13 @@ namespace { //anonymous namespace
             reloadEdges();
             context.render();
         }
+
+        void logCheckboxChange(int state) {
+            bool logEnabled = state == Qt::Checked;
+
+            histogramW->logarithmicScaleEnabled = logEnabled;
+            histogramW->update();
+        }
     };
 
     class Application {
@@ -534,6 +541,7 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestepRange);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
             QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestep);
+            QObject::connect(mainUI->logScaleCheckbox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::logCheckboxChange);
         }
 
         int run() {

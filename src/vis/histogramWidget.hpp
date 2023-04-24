@@ -32,6 +32,8 @@ class HistogramWidget : public QWidget
 
 public:  
 
+    bool logarithmicScaleEnabled = false;
+
     explicit HistogramWidget(QWidget *parent = nullptr);
 
     void setTick(int tick);
@@ -87,8 +89,6 @@ private:
     double min = 0;
     double sMax = 0;
     double sMin = 0;
-
-    bool logarithmicScaleEnabled = false;
 
     vtkSmartPointer<vtkTable> histogramData;
     vtkSmartPointer<vtkTable> summaryData;
