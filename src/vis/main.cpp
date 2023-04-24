@@ -35,7 +35,6 @@
 #include "context.hpp"
 #include "visUtility.hpp"
 #include "neuronProperties.hpp"
-#include "slider.hpp"
 #include "edge.hpp"
 #include "binaryReader.hpp"
 #include "histogramWidget.hpp"
