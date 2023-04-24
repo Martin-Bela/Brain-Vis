@@ -57,7 +57,7 @@ void HistogramWidget::paintSummary(QPainter& painter, bool redraw) {
     }
 }
 
-void HistogramWidget::paintHistogram(QPainter &painter) {  
+void HistogramWidget::paintHistogram(QPainter& painter) {  
     float tickSize = (float) geometry().width() / (float)getVisibleTicks();
     float binSize = (float) geometry().height() / (float)getBinCount();
     

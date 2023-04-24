@@ -12,7 +12,7 @@ public:
     TheWatch(QWidget *parent = nullptr);
 
 private :
-    QLabel *lblWatch;
+    QLabel *label;
 
 private slots:
     void writeUpdatedTime();
