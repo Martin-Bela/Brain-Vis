@@ -106,7 +106,9 @@ namespace { //anonymous namespace
 
         vtkNew<vtkUnsignedCharArray> colors;
         colors->SetName("colors");
-        colors->SetNumberOfComponents(3);
+        colors->SetNumberOfComponents(4);
+
+        ColorMixer colorMixer(QColor::fromRgbF(0, 0, 0.8), QColor::fromRgbF(1, 1, 1), QColor::fromRgbF(0.8, 0, 0), 0.5);
 
         for (int i = 0; i < pointCount; i++) {
             NeuronProperties neuron = reader.read();
@@ -115,18 +117,13 @@ namespace { //anonymous namespace
             std::array<unsigned char, 3> color = { 255, 255, 255 };
 
             auto val = (neuron.projection(colorAttribute) - mini) / (maxi - mini);
-            val = val * 2 - 1;
+            QColor color = colorMixer.getColor(val);
 
-            if (val > 0) {
-                color[1] = 255 - 255 * val;
-                color[2] = color[1];
-            }
-            else {
-                color[1] = 255 - 255 * val;
-                color[0] = color[1];
-            }
+            unsigned char alpha = 255;
 
-            colors->InsertNextTypedTuple(color.data());
+            std::array<unsigned char, 4> colorBytes = { color.red(), color.green(), color.blue(), alpha };
+
+            colors->InsertNextTypedTuple(colorBytes.data());
         }
 
         return colors;
