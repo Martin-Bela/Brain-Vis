@@ -5,6 +5,8 @@
 #include <vtkNew.h>
 #include <vtkNamedColors.h>
 
+#include <qcolor.h>
+
 
 #include <array>
 #include <filesystem>

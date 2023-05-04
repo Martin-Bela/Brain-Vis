@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1315</width>
+    <width>1204</width>
     <height>614</height>
    </rect>
   </property>
@@ -119,6 +119,9 @@
         </widget>
        </item>
        <item>
+        <widget class="QRangeSlider" name="rangeSlider" native="true"/>
+       </item>
+       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -152,6 +155,12 @@
    <class>HistogramWidget</class>
    <extends>QWidget</extends>
    <header>histogramWidget.hpp</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QRangeSlider</class>
+   <extends>QWidget</extends>
+   <header>QRangeSlider.hpp</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

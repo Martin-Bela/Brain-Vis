@@ -18,8 +18,7 @@ public:
         }
 
         // This starts the event loop and as a side effect causes an initial render.
-        renderer->SetBackground(namedColors->GetColor3d("LightYellow").GetData());
-
+        renderer->SetBackground(namedColors->GetColor3d("LightGrey").GetData());
         // Create camera, center it at center of points and setup to be similar to what is used in school
         vtkCamera* camera = renderer->GetActiveCamera();
         const double camera_bounds[6] = {0.0, 186.6724687, 0, 146.6490116 , 0, 154.3730879 };

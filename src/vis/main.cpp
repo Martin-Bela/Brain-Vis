@@ -43,38 +43,52 @@
 
 #include <unordered_map>
 #include <optional>
+#include <limits>
 
 
 namespace { //anonymous namespace
 
-     void loadPositions(vtkPoints& positions, std::vector<uint16_t>& mapping) {
-        vtkNew<vtkDelimitedTextReader> reader;
-        std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
-        reader->SetFileName(path.data());
-        reader->DetectNumericColumnsOn();
-        reader->SetFieldDelimiterCharacters(" ");
-        reader->Update();
+    struct Range {
+        double lower_bound;
+        double upper_bound;
 
-        int point_index = -1;
-        vtkTable* table = reader->GetOutput();
-
-        mapping.resize(table->GetNumberOfRows());
-        //the first row is header
-        for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
-            if (table->GetValue(i, 0).ToString() == "#") continue;
-
-            double point[] = {
-                 (table->GetValue(i, 1)).ToDouble(),
-                 (table->GetValue(i, 2)).ToDouble(),
-                 (table->GetValue(i, 3)).ToDouble()
-            };
-
-            if (point_index == -1 || manhattanDist(positions.GetPoint(point_index), point) > 0.5) {
-                positions.InsertNextPoint(point);
-                point_index++;
-            }
-            mapping[(table->GetValue(i, 0)).ToInt() - 1] = point_index;
+        static Range Whole() {
+            return { std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() };
         }
+
+        bool inRange(double x) {
+            return lower_bound <= x && x <= upper_bound;
+        }
+    };
+
+    void loadPositions(vtkPoints& positions, std::vector<uint16_t>& mapping) {
+    vtkNew<vtkDelimitedTextReader> reader;
+    std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
+    reader->SetFileName(path.data());
+    reader->DetectNumericColumnsOn();
+    reader->SetFieldDelimiterCharacters(" ");
+    reader->Update();
+
+    int point_index = -1;
+    vtkTable* table = reader->GetOutput();
+
+    mapping.resize(table->GetNumberOfRows());
+    //the first row is header
+    for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
+        if (table->GetValue(i, 0).ToString() == "#") continue;
+
+        double point[] = {
+                (table->GetValue(i, 1)).ToDouble(),
+                (table->GetValue(i, 2)).ToDouble(),
+                (table->GetValue(i, 3)).ToDouble()
+        };
+
+        if (point_index == -1 || manhattanDist(positions.GetPoint(point_index), point) > 0.5) {
+            positions.InsertNextPoint(point);
+            point_index++;
+        }
+        mapping[(table->GetValue(i, 0)).ToInt() - 1] = point_index;
+    }
     }
 
     void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timestep) {
@@ -94,7 +108,8 @@ namespace { //anonymous namespace
         }
    }
 
-    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::vector<uint16_t>& map, double mini, double maxi) {
+    vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::vector<uint16_t>& map, 
+        double mini, double maxi, Range pointFilter) {
         const int pointCount = 50000;
         auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
         
@@ -107,19 +122,18 @@ namespace { //anonymous namespace
         vtkNew<vtkUnsignedCharArray> colors;
         colors->SetName("colors");
         colors->SetNumberOfComponents(4);
-
+        
         ColorMixer colorMixer(QColor::fromRgbF(0, 0, 0.8), QColor::fromRgbF(1, 1, 1), QColor::fromRgbF(0.8, 0, 0), 0.5);
 
         for (int i = 0; i < pointCount; i++) {
             NeuronProperties neuron = reader.read();
 
             if (i == 0 || map[i] == map[i - 1]) continue;
-            std::array<unsigned char, 3> color = { 255, 255, 255 };
 
             auto val = (neuron.projection(colorAttribute) - mini) / (maxi - mini);
             QColor color = colorMixer.getColor(val);
 
-            unsigned char alpha = 255;
+            unsigned char alpha = pointFilter.inRange(val) ? 255 : 0;
 
             std::array<unsigned char, 4> colorBytes = { color.red(), color.green(), color.blue(), alpha };
 
@@ -268,6 +282,8 @@ namespace { //anonymous namespace
 
         std::vector<uint16_t> point_map;
 
+        Range pointFilter = Range::Whole();
+
         int currentTimestep;
         int currentColorAttribute;
         bool edgesVisible = false;
@@ -360,8 +376,9 @@ namespace { //anonymous namespace
 
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
 
-            auto colors = loadColors(timestep, colorAttribute, point_map,
-                summaryData->GetValue(timestep + 1, 3).ToDouble(), summaryData->GetValue(timestep + 1, 2).ToDouble());
+            double propMin = summaryData->GetValue(timestep + 1, 3).ToDouble();
+            double propMax = summaryData->GetValue(timestep + 1, 2).ToDouble();
+            auto colors = loadColors(timestep, colorAttribute, point_map, propMin, propMax, pointFilter);
 
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
@@ -423,6 +440,12 @@ namespace { //anonymous namespace
         }
 
     public slots:
+        void setPointFilter(unsigned low, unsigned hight) {
+            pointFilter = Range{ low / 100.0, hight / 100.0 };
+            reloadColors(currentTimestep, currentColorAttribute);
+            context.render();
+        }
+
         void changeTimestep(int timestep) {
             reloadColors(timestep, currentColorAttribute);
             reloadHistogram(currentTimestep, currentColorAttribute);
@@ -451,8 +474,9 @@ namespace { //anonymous namespace
         }
 
         void changeColorAttribute(int colorAttribute) {
-            reloadColors(currentTimestep, colorAttribute);
+            pointFilter = Range::Whole();
             loadHistogramData(colorAttribute);
+            reloadColors(currentTimestep, colorAttribute);
             reloadHistogram(currentTimestep, colorAttribute);
             context.render();
         }
@@ -532,6 +556,7 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
             QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestep);
             QObject::connect(mainUI->logScaleCheckbox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::logCheckboxChange);
+            QObject::connect(mainUI->rangeSlider, &QRangeSlider::valueChange, visualisation.ptr(), &Visualisation::setPointFilter);
         }
 
         int run() {
