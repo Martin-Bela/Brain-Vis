@@ -5,266 +5,208 @@
 #include <QPainter>
 #include <QMouseEvent>
 
-QRangeSlider::QRangeSlider(QWidget *parent) : QWidget(parent)
-{
-    m_lowValue = m_minimum;
-    m_highValue = m_maximum;
+QRangeSlider::QRangeSlider(QWidget* parent) : QWidget(parent) {
+	_lowValue = _minimum;
+	_highValue = _maximum;
 
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 }
 
-QRangeSlider::~QRangeSlider()
-{
-}
+void QRangeSlider::setMinimum(const unsigned int minimum) {
+	if (_minimum != minimum) {
+		_minimum = minimum;
+		if (_minimum >= _maximum) {
+			setMaximum(_minimum + 1);
+			setHighValue(_maximum);
+			setLowValue(_minimum);
+		}
+		else if (_minimum >= _highValue) {
+			setHighValue(_minimum + 1);
+			setLowValue(_minimum);
+		}
+		else if (_minimum > _lowValue) {
+			setLowValue(_minimum);
+		}
 
-unsigned int QRangeSlider::minimum() const
-{
-    return m_minimum;
-}
-
-void QRangeSlider::setMinimum(const unsigned int minimum)
-{
-    if (m_minimum != minimum)
-    {
-        m_minimum = minimum;
-        if (m_minimum >= m_maximum)
-        {
-            setMaximum(m_minimum + 1);
-            setHighValue(m_maximum);
-            setLowValue(m_minimum);
-        }
-        else if (m_minimum >= m_highValue)
-        {
-            setHighValue(m_minimum + 1);
-            setLowValue(m_minimum);
-        }
-        else if (m_minimum > m_lowValue)
-        {
-            setLowValue(m_minimum);
-        }
-
-        update();
-        emit(minimumChange(m_minimum));
-        emit(rangeChange(m_minimum, m_maximum));
-    }
-}
-
-unsigned int QRangeSlider::maximum() const
-{
-    return m_maximum;
+		update();
+		emit(minimumChange(_minimum));
+		emit(rangeChange(_minimum, _maximum));
+	}
 }
 
 void QRangeSlider::setMaximum(const unsigned int maximum)
 {
-    if (maximum != m_maximum)
-    {
-        m_maximum = maximum;
-        if (m_maximum <= m_minimum)
-        {
-            setMinimum(m_maximum++);
-            setHighValue(m_maximum);
-            setLowValue(m_minimum);
-        }
-        else if (m_maximum <= m_lowValue)
-        {
-            setHighValue(m_maximum);
-            setLowValue(m_highValue - 1);
-        }
-        else if (m_maximum < m_highValue)
-        {
-            setHighValue(m_maximum);
-        }
+	if (maximum != _maximum) {
+		_maximum = maximum;
+		if (_maximum <= _minimum) {
+			setMinimum(_maximum++);
+			setHighValue(_maximum);
+			setLowValue(_minimum);
+		}
+		else if (_maximum <= _lowValue) {
+			setHighValue(_maximum);
+			setLowValue(_highValue - 1);
+		}
+		else if (_maximum < _highValue) {
+			setHighValue(_maximum);
+		}
 
-        update();
-        emit(maximumChange(m_maximum));
-        emit(rangeChange(m_minimum, m_maximum));
-    }
+		update();
+		emit(maximumChange(_maximum));
+		emit(rangeChange(_minimum, _maximum));
+	}
 }
 
-unsigned int QRangeSlider::lowValue() const
-{
-    return m_lowValue;
+unsigned int QRangeSlider::lowValue() const {
+	return _lowValue;
 }
 
-void QRangeSlider::setLowValue(const unsigned int lowValue)
-{
-    if (m_lowValue != lowValue)
-    {
-        m_lowValue = lowValue;
-        if (m_lowValue > m_maximum)
-        {
-            m_lowValue = m_maximum - 1;
-        }
-        if (m_lowValue < m_minimum)
-        {
-            m_lowValue = m_minimum;
-        }
-        if (m_lowValue >= m_highValue)
-        {
-            setHighValue(m_lowValue + 1);
-        }
+void QRangeSlider::setLowValue(const unsigned int lowValue) {
+	if (_lowValue != lowValue) {
+		_lowValue = lowValue;
+		if (_lowValue >= _maximum) {
+			_lowValue = _maximum - 1;
+		}
+		else if (_lowValue < _minimum) {
+			_lowValue = _minimum;
+		}
+		
+		if (_lowValue >= _highValue) {
+			setHighValue(_lowValue + 1);
+		}
 
-        update();
-        emit(lowValueChange(m_lowValue));
-        emit(valueChange(m_lowValue, m_highValue));
-    }
+		update();
+		emit(lowValueChange(_lowValue));
+		emit(valueChange(_lowValue, _highValue));
+	}
 }
 
 unsigned int QRangeSlider::highValue() const
 {
-    return m_highValue;
+	return _highValue;
 }
 
-void QRangeSlider::setHighValue(const unsigned int highValue)
-{
-    if (m_highValue != highValue)
-    {
-        m_highValue = highValue;
-        if (m_highValue > m_maximum)
-        {
-            m_highValue = m_maximum;
-        }
-        if (m_highValue < m_minimum)
-        {
-            m_highValue = m_minimum + 1;
-        }
-        if (m_highValue <= m_lowValue)
-        {
-            setLowValue(m_lowValue - 1);
-        }
+void QRangeSlider::setHighValue(const unsigned int highValue) {
+	if (_highValue != highValue) {
+		_highValue = highValue;
+		
+		if (_highValue > _maximum) {
+			_highValue = _maximum;
+		}
+		else if (_highValue <= _minimum) {
+			_highValue = _minimum + 1;
+		}
+		
+		if (_highValue <= _lowValue) {
+			setLowValue(_highValue - 1);
+		}
 
-        update();
-        emit(highValueChange(m_highValue));
-        emit(valueChange(m_lowValue, m_highValue));
-    }
+		update();
+		emit(highValueChange(_highValue));
+		emit(valueChange(_lowValue, _highValue));
+	}
 }
 
-unsigned int QRangeSlider::step() const
-{
-    return m_step;
+unsigned int QRangeSlider::step() const {
+	return _step;
 }
 
-void QRangeSlider::setStep(const unsigned int step)
-{
-    m_step = step;
+void QRangeSlider::setStep(const unsigned int step) {
+	_step = step;
 }
 
-void QRangeSlider::setRange(const unsigned int minimum, const unsigned int maximum)
-{
-    setMinimum(minimum);
-    setMaximum(maximum);
+void QRangeSlider::setRange(const unsigned int minimum, const unsigned int maximum) {
+	setMinimum(minimum);
+	setMaximum(maximum);
 }
 
-QSize QRangeSlider::sizeHint() const
-{
-    return minimumSizeHint();
-    //return QSize(100 * HANDLE_SIZE + 2 * PADDING, 2 * HANDLE_SIZE + 2 * PADDING);
+QSize QRangeSlider::sizeHint() const {
+	return minimumSizeHint();
+	//return QSize(100 * HANDLE_SIZE + 2 * PADDING, 2 * HANDLE_SIZE + 2 * PADDING);
 }
 
-QSize QRangeSlider::minimumSizeHint() const
-{
-    return QSize(2 * HANDLE_SIZE + 2 * PADDING, 2 * HANDLE_SIZE);
+QSize QRangeSlider::minimumSizeHint() const {
+	return QSize(2 * PADDING, 2 * (PADDING + HANDLE_RADIUS));
 }
 
-void QRangeSlider::mousePressEvent(QMouseEvent *e)
-{
-    if (e->position().y() >= (height() - SLIDER_HEIGHT - HANDLE_SIZE) / 2 && e->position().y() <= (height() - SLIDER_HEIGHT + HANDLE_SIZE) / 2) // Check if event was on slider
-    {
-        float mouseX = e->position().x() < 0 ? 0 : e->position().x();
-        unsigned int mouseValue = (mouseX / width()) * (m_maximum - m_minimum) + m_minimum;
-        m_lastMouseValue = mouseValue;
-    }
+void QRangeSlider::mousePressEvent(QMouseEvent* e) {
+	float mouseY = e->position().y();
+
+	auto dist_low = std::abs(valueToYCoord(_lowValue) - mouseY);
+	auto dist_high = std::abs(valueToYCoord(_highValue) - mouseY);
+
+	if (dist_low < dist_high) {
+		if (dist_low <= HANDLE_RADIUS) {
+			_movingHandle = lowHandle;
+			return;
+		}
+	}
+	else {
+		if (dist_high <= HANDLE_RADIUS) {
+			_movingHandle = highHandle;
+			return;
+		}
+	}
+	_movingHandle = noHandle;
 }
 
-void QRangeSlider::mouseReleaseEvent(QMouseEvent *e)
-{
-    Q_UNUSED(e);
-
-    m_lastMouseValue = -1;
+void QRangeSlider::mouseReleaseEvent(QMouseEvent* e) {
+	Q_UNUSED(e);
+	_movingHandle = noHandle;
 }
 
-void QRangeSlider::mouseMoveEvent(QMouseEvent *e)
-{
-    if (m_lastMouseValue != -1)
-    {
-        float mouseX = e->position().x() < 0 ? 0 : e->position().x();
-        unsigned int mouseValue = (mouseX / width()) * (m_maximum - m_minimum) + m_minimum;
+void QRangeSlider::mouseMoveEvent(QMouseEvent* e) {
+	int slider_height = height() - 2 * PADDING;
 
-        if (m_lowValue - 10 <= m_lastMouseValue && m_lastMouseValue < m_lowValue + 10)
-        {
-            setLowValue(mouseValue);
-        }
-        else if (m_highValue - 10 <= m_lastMouseValue && m_lastMouseValue < m_highValue + 10)
-        {
-            setHighValue(mouseValue);
-        }
-        else if (m_lastMouseValue < m_highValue && m_lastMouseValue > m_lowValue)
-        {
-            int deltaValue = (mouseValue - m_lastMouseValue);
-            if (deltaValue < 0)
-            {
-                setLowValue(m_lowValue + deltaValue > m_lowValue ? m_minimum : m_lowValue + deltaValue); // Check fo underflow
-                setHighValue(m_highValue + deltaValue);
-            }
-            else if (deltaValue > 0)
-            {
-                setLowValue(m_lowValue + deltaValue);
-                setHighValue(m_highValue + deltaValue < m_highValue ? m_maximum : m_highValue + deltaValue); // Check fo overflow
-            }
-        }
+	float mouseY = e->position().y() - PADDING;
 
-        m_lastMouseValue = mouseValue;
-    }
+	int mouseValue = std::lerp(_minimum, _maximum, 1 - mouseY / slider_height);
+	mouseValue = std::clamp(mouseValue, (int)_minimum, (int)_maximum);
+
+	if (_movingHandle == lowHandle) {
+		setLowValue(mouseValue);
+	}
+	else if (_movingHandle == highHandle) {
+		setHighValue(mouseValue);
+	}
 }
 
-void QRangeSlider::paintEvent(QPaintEvent *event)
-{
-    Q_UNUSED(event);
+int QRangeSlider::valueToYCoord(int value) const {
+	int slider_height = height() - 2 * PADDING;
+	double pos_lower = 1 - map_to_unit_range(_minimum, _maximum, value);
+	return round(slider_height * pos_lower) + PADDING;
+}
 
-    ColorMixer colorMixer(QColor::fromRgbF(0, 0, 1), QColor::fromRgbF(0.7, 0.7, 0.7), QColor::fromRgbF(1, 0, 0), 0.5);
+void QRangeSlider::paintEvent(QPaintEvent* event) {
+	Q_UNUSED(event);
 
-    QLinearGradient linearGrad(0, 0 , width(), 0);
-    linearGrad.setColorAt(0, colorMixer.getColor(0));
-    linearGrad.setColorAt(0.5, colorMixer.getColor(0.5));
-    linearGrad.setColorAt(1, colorMixer.getColor(1));
-    
+	ColorMixer colorMixer(QColor::fromRgbF(0, 0, 1), QColor::fromRgbF(0.7, 0.7, 0.7), QColor::fromRgbF(1, 0, 0), 0.5);
 
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::RenderHint::Antialiasing);
+	QLinearGradient linearGrad(0, 0, 0, height());
+	linearGrad.setColorAt(0, colorMixer.getColor(1));
+	linearGrad.setColorAt(0.5, colorMixer.getColor(0.5));
+	linearGrad.setColorAt(1, colorMixer.getColor(0));
 
-    // Draw background
-    //painter.setPen(QPen(Qt::GlobalColor::darkGray, 0.8));
-    painter.setBrush(QBrush(linearGrad));
-    painter.drawRoundedRect(PADDING,
-                            (height() - SLIDER_HEIGHT) / 2,
-                            width() - 2 * PADDING,
-                            SLIDER_HEIGHT,
-                            2,
-                            2);
+	int slider_height = height() - 2 * PADDING;
 
-    // Draw range
-    /*painter.setBrush(QBrush(QColor(0x1E, 0x90, 0xFF, 80)));
-    painter.drawRect(PADDING + ((width() - 2 * PADDING) * (m_lowValue - m_minimum) / (m_maximum - m_minimum)),
-                     (height() - SLIDER_HEIGHT) / 2,
-                     (width() - 2 * PADDING) * (m_highValue - m_lowValue) / (m_maximum - m_minimum),
-                     SLIDER_HEIGHT);*/
+	QPainter painter(this);
+	painter.setRenderHint(QPainter::RenderHint::Antialiasing);
 
-    // Draw lower handle
-    painter.setBrush(QBrush(QColor(Qt::GlobalColor::white)));
-    painter.drawRoundedRect(PADDING + ((width() - 2 * PADDING) * (m_lowValue - m_minimum) / (m_maximum - m_minimum)),
-                            (height() - HANDLE_SIZE) / 2,
-                            HANDLE_SIZE,
-                            HANDLE_SIZE,
-                            2,
-                            2);
+	// Draw background
+	//painter.setPen(QPen(Qt::GlobalColor::darkGray, 0.8));
+	painter.setBrush(QBrush(linearGrad));
+	painter.drawRoundedRect((width() - SLIDER_WIDTH) / 2,
+		PADDING,
+		SLIDER_WIDTH,
+		slider_height,
+		2,
+		2);
 
-    // Draw higher handle
-    painter.drawRoundedRect(PADDING + ((width() - 2 * PADDING) * (m_highValue - m_minimum) / (m_maximum - m_minimum)) - HANDLE_SIZE,
-                            (height() - HANDLE_SIZE) / 2,
-                            HANDLE_SIZE,
-                            HANDLE_SIZE,
-                            2,
-                            2);
+	// Draw lower handle
+	painter.setBrush(QBrush(QColor(Qt::GlobalColor::white)));
 
-    painter.end();
+	painter.drawEllipse(QPoint(width() / 2, valueToYCoord(_lowValue)), HANDLE_RADIUS, HANDLE_RADIUS);
+	painter.drawEllipse(QPoint(width() / 2, valueToYCoord(_highValue)), HANDLE_RADIUS, HANDLE_RADIUS);
+
+	painter.end();
 }

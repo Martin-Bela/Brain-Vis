@@ -7,9 +7,8 @@ class QRangeSlider : public QWidget
 
 public:
     QRangeSlider(QWidget *parent = nullptr);
-    ~QRangeSlider();
-    unsigned int minimum() const;
-    unsigned int maximum() const;
+    unsigned int minimum() const { return _minimum; };
+    unsigned int maximum() const { return _maximum; };
     unsigned int lowValue() const;
     unsigned int highValue() const;
     unsigned int step() const;
@@ -42,29 +41,28 @@ private:
     void mouseMoveEvent(QMouseEvent *e);
     void paintEvent(QPaintEvent *event);
 
+    int valueToYCoord(int value) const;
+
     /* Minimum range value */
-    unsigned int m_minimum = 0;
+    unsigned int _minimum = 0;
 
     /* Maximum range value */
-    unsigned int m_maximum = 100;
+    unsigned int _maximum = 100;
 
     /* Step value */
-    unsigned int m_step = 1;
+    unsigned int _step = 1;
 
     /* Value of low handle */
-    unsigned int m_lowValue;
+    unsigned int _lowValue;
 
     /* Value of high handle */
-    unsigned int m_highValue;
+    unsigned int _highValue;
 
-    /* Value of the last mouse click */
-    int m_lastMouseValue = -1;
 
-    /* Painter constants */
-    /* Slider height in pixels */
-    static constexpr unsigned int SLIDER_HEIGHT = 5;
-    /* Slider handle size in pixels */
-    static constexpr unsigned int HANDLE_SIZE = 13;
-    /* Left and Right padding in pixels */
-    static constexpr unsigned int PADDING = 1;
+    enum Handle{ noHandle, lowHandle, highHandle};
+    Handle _movingHandle = noHandle;
+
+    static constexpr unsigned int SLIDER_WIDTH = 5;
+    static constexpr unsigned int HANDLE_RADIUS = 6;
+    static constexpr unsigned int PADDING = HANDLE_RADIUS + 2;
 };

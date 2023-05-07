@@ -52,3 +52,7 @@ inline double manhattanDist(double* x, double* y) {
     auto dz = x[2] - y[2];
     return abs(dx) + abs(dy) + abs(dz);
 };
+
+inline double map_to_unit_range(double lower_bound, double upper_bound, double value) {
+    return (value - lower_bound) / (upper_bound - lower_bound);
+}
