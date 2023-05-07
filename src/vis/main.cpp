@@ -62,33 +62,33 @@ namespace { //anonymous namespace
     };
 
     void loadPositions(vtkPoints& positions, std::vector<uint16_t>& mapping) {
-    vtkNew<vtkDelimitedTextReader> reader;
-    std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
-    reader->SetFileName(path.data());
-    reader->DetectNumericColumnsOn();
-    reader->SetFieldDelimiterCharacters(" ");
-    reader->Update();
+        vtkNew<vtkDelimitedTextReader> reader;
+        std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
+        reader->SetFileName(path.data());
+        reader->DetectNumericColumnsOn();
+        reader->SetFieldDelimiterCharacters(" ");
+        reader->Update();
 
-    int point_index = -1;
-    vtkTable* table = reader->GetOutput();
+        int point_index = -1;
+        vtkTable* table = reader->GetOutput();
 
-    mapping.resize(table->GetNumberOfRows());
-    //the first row is header
-    for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
-        if (table->GetValue(i, 0).ToString() == "#") continue;
+        mapping.resize(table->GetNumberOfRows());
+        //the first row is header
+        for (vtkIdType i = 1; i < table->GetNumberOfRows(); i++) {
+            if (table->GetValue(i, 0).ToString() == "#") continue;
 
-        double point[] = {
-                (table->GetValue(i, 1)).ToDouble(),
-                (table->GetValue(i, 2)).ToDouble(),
-                (table->GetValue(i, 3)).ToDouble()
-        };
+            double point[] = {
+                    (table->GetValue(i, 1)).ToDouble(),
+                    (table->GetValue(i, 2)).ToDouble(),
+                    (table->GetValue(i, 3)).ToDouble()
+            };
 
-        if (point_index == -1 || manhattanDist(positions.GetPoint(point_index), point) > 0.5) {
-            positions.InsertNextPoint(point);
-            point_index++;
+            if (point_index == -1 || manhattanDist(positions.GetPoint(point_index), point) > 0.5) {
+                positions.InsertNextPoint(point);
+                point_index++;
+            }
+            mapping[(table->GetValue(i, 0)).ToInt() - 1] = point_index;
         }
-        mapping[(table->GetValue(i, 0)).ToInt() - 1] = point_index;
-    }
     }
 
     void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timestep) {
@@ -123,7 +123,7 @@ namespace { //anonymous namespace
         colors->SetName("colors");
         colors->SetNumberOfComponents(4);
         
-        ColorMixer colorMixer(QColor::fromRgbF(0, 0, 0.8), QColor::fromRgbF(1, 1, 1), QColor::fromRgbF(0.8, 0, 0), 0.5);
+        ColorMixer colorMixer(QColor::fromRgbF(0, 0, 1), QColor::fromRgbF(0.7, 0.7, 0.7), QColor::fromRgbF(1, 0, 0), 0.5);
 
         for (int i = 0; i < pointCount; i++) {
             NeuronProperties neuron = reader.read();

@@ -1,5 +1,7 @@
 #include "QRangeSlider.hpp"
 
+#include "visUtility.hpp"
+
 #include <QPainter>
 #include <QMouseEvent>
 
@@ -219,12 +221,20 @@ void QRangeSlider::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
 
+    ColorMixer colorMixer(QColor::fromRgbF(0, 0, 1), QColor::fromRgbF(0.7, 0.7, 0.7), QColor::fromRgbF(1, 0, 0), 0.5);
+
+    QLinearGradient linearGrad(0, 0 , width(), 0);
+    linearGrad.setColorAt(0, colorMixer.getColor(0));
+    linearGrad.setColorAt(0.5, colorMixer.getColor(0.5));
+    linearGrad.setColorAt(1, colorMixer.getColor(1));
+    
+
     QPainter painter(this);
     painter.setRenderHint(QPainter::RenderHint::Antialiasing);
 
     // Draw background
-    painter.setPen(QPen(Qt::GlobalColor::darkGray, 0.8));
-    painter.setBrush(QBrush(QColor(Qt::GlobalColor::lightGray)));
+    //painter.setPen(QPen(Qt::GlobalColor::darkGray, 0.8));
+    painter.setBrush(QBrush(linearGrad));
     painter.drawRoundedRect(PADDING,
                             (height() - SLIDER_HEIGHT) / 2,
                             width() - 2 * PADDING,
@@ -233,11 +243,11 @@ void QRangeSlider::paintEvent(QPaintEvent *event)
                             2);
 
     // Draw range
-    painter.setBrush(QBrush(QColor(0x1E, 0x90, 0xFF)));
+    /*painter.setBrush(QBrush(QColor(0x1E, 0x90, 0xFF, 80)));
     painter.drawRect(PADDING + ((width() - 2 * PADDING) * (m_lowValue - m_minimum) / (m_maximum - m_minimum)),
                      (height() - SLIDER_HEIGHT) / 2,
                      (width() - 2 * PADDING) * (m_highValue - m_lowValue) / (m_maximum - m_minimum),
-                     SLIDER_HEIGHT);
+                     SLIDER_HEIGHT);*/
 
     // Draw lower handle
     painter.setBrush(QBrush(QColor(Qt::GlobalColor::white)));
