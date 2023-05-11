@@ -170,6 +170,9 @@
          </item>
          <item row="0" column="0" colspan="3">
           <widget class="QSlider" name="slider">
+           <property name="maximum">
+            <number>9999</number>
+           </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>

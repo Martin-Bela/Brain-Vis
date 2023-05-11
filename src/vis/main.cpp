@@ -465,6 +465,7 @@ namespace { //anonymous namespace
             if (upperBoundary == maxVal) lowerBoundary = maxVal - 500;
             histogramW->setVisibleRange(lowerBoundary, upperBoundary);
 
+            std::cout << "Slider value:" << std::to_string(sliderValue) << std::endl;
             changeTimestep(sliderValue);
         }
 
@@ -521,6 +522,7 @@ namespace { //anonymous namespace
             
             // Set Histogram Widget so Visualization Class knows about it!
             visualisation->setHistogramWidgetPtr(mainUI->bottomPanel);
+            mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
 
             auto attributeNames = std::to_array<const char*>({ "fired", "fired fraction", "activity", "dampening", "current calcium",
                 "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });

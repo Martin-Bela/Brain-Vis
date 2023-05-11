@@ -111,19 +111,19 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
     case Summary:
         paintSummary(painter, true);
         painter.setPen(QPen({ 0, 255, 0 }));
-            paintMinMaxLabels(painter, Qt::black);
+        paintMinMaxLabels(painter, Qt::black);
         break;
     case Histogram:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
-            paintMinMaxLabels(painter, Qt::black);
+        paintMinMaxLabels(painter, Qt::black);
         break;
     case Both:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
         paintSummary(painter, false);
         painter.setPen(QPen({ 0, 255, 0 }));
-            paintMinMaxLabels(painter, Qt::black);
+        paintMinMaxLabels(painter, Qt::black);
         break;
     }
 
@@ -135,6 +135,7 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
 void HistogramWidget::mousePressEvent(QMouseEvent* e) {
     if (e->buttons() & Qt::LeftButton) {
         float tickSize = (float)geometry().width() / (float)getVisibleTicks();
+        previousTick = tick;
         tick = round(e->position().x() / tickSize) + firstVisibleTick;
         std::cout << "First tick: " << firstVisibleTick << std::endl;
         std::cout << "Timestep: " << tick << std::endl;
@@ -150,6 +151,7 @@ void HistogramWidget::mouseReleaseEvent(QMouseEvent*) {
 void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
     if (e->buttons() & Qt::LeftButton) {
         float tickSize = (float)geometry().width() / (float)getVisibleTicks();
+        previousTick = tick;
         tick = round(e->position().x() / tickSize) + firstVisibleTick;
         std::cout << "First tick: " << firstVisibleTick << std::endl;
         std::cout << "Timestep: " << tick << std::endl;
@@ -157,8 +159,27 @@ void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
     }
 }
 
+void HistogramWidget::resizeEvent(QResizeEvent*) {
+    dirty = true;
+}
+
+void HistogramWidget::keyPressEvent(QKeyEvent* e) {
+    if (e->key() == Qt::Key_Left || e->key() == Qt::Key_A)  {
+        previousTick = tick;
+        tick = std::max(firstVisibleTick, tick - 1);
+        histogramCursorMoved(tick);
+    }
+    else if (e->key() == Qt::Key_Right || e->key() == Qt::Key_D) {
+        previousTick = tick;
+        tick = std::min(lastVisibleTick, tick + 1);
+        histogramCursorMoved(tick);
+    }
+    update();
+}
+
 
 void HistogramWidget::setTick(int newTick) {
+    previousTick = tick;
     tick = newTick;
 }
 

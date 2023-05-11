@@ -41,6 +41,7 @@ public:
     void setVisibleRange(int firstTick, int lastTick) {
         firstVisibleTick = firstTick;
         lastVisibleTick = lastTick;
+        dirty = true;
     }
 
     vtkTable &getHistogramDataRef() {
@@ -56,6 +57,7 @@ public:
         this->summaryData = std::move(summaryData);
 
         loaded = true;
+        dirty = true;
         recomputeMinMax();
         recomputeSummaryMinMax();
     }
@@ -80,21 +82,26 @@ protected:
     void mousePressEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
     void mouseMoveEvent(QMouseEvent*) override;
+    void resizeEvent(QResizeEvent*) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 private:
     bool antialiased = true;
     bool loaded = false;
+    bool dirty = true;
 
     double max = 0; 
     double min = 0;
     double sMax = 0;
     double sMin = 0;
+    
 
     vtkSmartPointer<vtkTable> histogramData;
     vtkSmartPointer<vtkTable> summaryData;
     HistogramDrawMode drawMode = Histogram;
 
     int tick = 1;
+    int previousTick = 1;
     int firstVisibleTick = 0;
     int lastVisibleTick = 500; // TODO Automatically set by Slider
 
