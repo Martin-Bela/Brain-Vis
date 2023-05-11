@@ -25,13 +25,26 @@ int HistogramWidget::getYPos(double value) {
     return val;
 }
 
+void HistogramWidget::paintSummaryTick(QPainter& painter, int tick, float tickSize, QPen& black, QPen& blue, QPen& red) {
+    int x0 = (tick - firstVisibleTick) * tickSize;
+    int x1 = (tick + 1 - firstVisibleTick) * tickSize;
+
+    painter.setPen(red);
+    painter.drawLine(x0, getYPos(summaryData->GetValue(tick + 1, 2).ToDouble()),
+        x1, getYPos(summaryData->GetValue(tick + 2, 2).ToDouble()));
+
+    painter.setPen(blue);
+    painter.drawLine(x0, getYPos(summaryData->GetValue(tick + 1, 3).ToDouble()),
+        x1, getYPos(summaryData->GetValue(tick + 2, 3).ToDouble()));
+
+    painter.setPen(black);
+    painter.drawLine(x0, getYPos(summaryData->GetValue(tick + 1, 0).ToDouble()),
+        x1, getYPos(summaryData->GetValue(tick + 2, 0).ToDouble()));
+}
+
 void HistogramWidget::paintSummary(QPainter& painter, bool redraw) {
     float tickSize = (float)geometry().width() / (float)getVisibleTicks();
     
-    if (redraw) {
-        painter.fillRect(0, 0, geometry().width(), geometry().height(), QBrush({ 255, 255, 255 }));
-    }
-
     QPen black = QPen({ 0,   0, 0   });
     QPen blue  = QPen({ 0,   0, 255 });
     QPen red   = QPen({ 255, 0, 0   });
@@ -39,23 +52,45 @@ void HistogramWidget::paintSummary(QPainter& painter, bool redraw) {
     blue.setWidth(2);
     red.setWidth(2);
     // TODO Use PixMap?
-    for (int i = firstVisibleTick; i <= lastVisibleTick - 1; i++) {
-        int x0 = (i - firstVisibleTick) * tickSize;
-        int x1 = (i + 1 - firstVisibleTick) * tickSize;
+    if (dirty) {
+        if (redraw) {
+            painter.fillRect(0, 0, geometry().width(), geometry().height(), QBrush({ 255, 255, 255 }));
+        }
+        
+        for (int i = firstVisibleTick; i <= lastVisibleTick - 1; i++) {
+            paintSummaryTick(painter, i, tickSize, black, blue, red);
+        }
+    }
+    else {
+        for (int previousTick : previousTicks) {
+            int x0 = (previousTick - firstVisibleTick) * tickSize;
+            int x1 = (previousTick + 1 - firstVisibleTick) * tickSize;
 
-        painter.setPen(red);
-        painter.drawLine(x0, getYPos(summaryData->GetValue(i + 1, 2).ToDouble()),
-                         x1, getYPos(summaryData->GetValue(i + 2, 2).ToDouble()));
+            if (redraw) {
+                painter.fillRect(x0, 0, tickSize, geometry().height(), QBrush({ 255, 255, 255 }));
+            }
 
-        painter.setPen(blue);
-        painter.drawLine(x0, getYPos(summaryData->GetValue(i + 1, 3).ToDouble()),
-                         x1, getYPos(summaryData->GetValue(i + 2, 3).ToDouble()));
-
-        painter.setPen(black);
-        painter.drawLine(x0, getYPos(summaryData->GetValue(i + 1, 0).ToDouble()),
-                         x1, getYPos(summaryData->GetValue(i + 2, 0).ToDouble()));
+            paintSummaryTick(painter, previousTick, tickSize, black, blue, red);
+        }
+        previousTicks.clear();
     }
 }
+
+void HistogramWidget::paintHistogramTick(QPainter& painter, int tick, float binSize, float tickSize) {
+    for (int y = 0; y < getBinCount(); y++) {
+        int y_pos = getBinCount() - y - 1;
+        double v = histogramData->GetValue(tick, y).ToDouble() / (max + 1);
+
+        if (logarithmicScaleEnabled) {
+            v = std::fmax(0, log(histogramData->GetValue(tick, y).ToInt()) + 1) / (log(max) + 1);
+        }
+
+        QColor color = getMagmaColor(v);
+        painter.setBrush(QBrush(color));
+        painter.fillRect((tick - firstVisibleTick) * tickSize, y_pos * binSize, tickSize + 1, binSize + 1, painter.brush());
+    }
+}
+
 
 void HistogramWidget::paintHistogram(QPainter& painter) {  
     float tickSize = (float) geometry().width() / (float)getVisibleTicks();
@@ -65,22 +100,14 @@ void HistogramWidget::paintHistogram(QPainter& painter) {
     std::cout << "BinSize:" << binSize << ", TimestepSize: " << tickSize << "\n";
     
     // TODO Use PixMap!
-    for (int x = firstVisibleTick; x <= lastVisibleTick; x++) {
-        for (int y = 0; y < getBinCount(); y++) {
-            int y_pos = getBinCount() - y - 1;
-            double v = histogramData->GetValue(x, y).ToDouble() / (max + 1);
-
-            if (logarithmicScaleEnabled) {
-                v = std::fmax(0, log(histogramData->GetValue(x, y).ToInt()) + 1) / (log(max) + 1);
-            }
-
-            QColor color = getMagmaColor(v);
-            //float h = (1.f - v) * 0.85f + 0.15f;
-            //float s = 1.f;
-            //float l = v * 0.5f + 0.25f;
-            //color.setHsl(h * 255, s * 255, l * 255);
-            painter.setBrush(QBrush(color));
-            painter.fillRect((x - firstVisibleTick) * tickSize, y_pos * binSize, tickSize + 1, binSize + 1, painter.brush());
+    if (dirty) {
+        for (int x = firstVisibleTick; x <= lastVisibleTick; x++) {
+            paintHistogramTick(painter, x, binSize, tickSize);
+        }
+    }
+    else {
+        for (int previousTick : previousTicks) {
+            paintHistogramTick(painter, previousTick, binSize, tickSize);
         }
     }
 
@@ -126,6 +153,7 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
         paintMinMaxLabels(painter, Qt::black);
         break;
     }
+    dirty = false;
 
     float tickSize =  (float) geometry().width() / (float) getVisibleTicks();
     int x = (tick - firstVisibleTick) * tickSize;
@@ -134,11 +162,9 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
 
 void HistogramWidget::mousePressEvent(QMouseEvent* e) {
     if (e->buttons() & Qt::LeftButton) {
-        float tickSize = (float)geometry().width() / (float)getVisibleTicks();
-        previousTick = tick;
-        tick = round(e->position().x() / tickSize) + firstVisibleTick;
-        std::cout << "First tick: " << firstVisibleTick << std::endl;
-        std::cout << "Timestep: " << tick << std::endl;
+        float tickSize = (float) geometry().width() / (float) getVisibleTicks();
+        double pos = std::clamp(e->position().x(), 0.0, (double) geometry().width());
+        setTick(round(pos / tickSize) + firstVisibleTick);
         histogramCursorMoved(tick);
     }
 }
@@ -151,27 +177,24 @@ void HistogramWidget::mouseReleaseEvent(QMouseEvent*) {
 void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
     if (e->buttons() & Qt::LeftButton) {
         float tickSize = (float)geometry().width() / (float)getVisibleTicks();
-        previousTick = tick;
-        tick = round(e->position().x() / tickSize) + firstVisibleTick;
-        std::cout << "First tick: " << firstVisibleTick << std::endl;
-        std::cout << "Timestep: " << tick << std::endl;
+        double pos = std::clamp(e->position().x(), 0.0, (double)geometry().width());
+        setTick(round(pos / tickSize) + firstVisibleTick);
         histogramCursorMoved(tick);
     }
 }
 
-void HistogramWidget::resizeEvent(QResizeEvent*) {
+void HistogramWidget::resizeEvent(QResizeEvent* e) {
     dirty = true;
+    update();
 }
 
 void HistogramWidget::keyPressEvent(QKeyEvent* e) {
     if (e->key() == Qt::Key_Left || e->key() == Qt::Key_A)  {
-        previousTick = tick;
-        tick = std::max(firstVisibleTick, tick - 1);
+        setTick(std::max(firstVisibleTick, tick - 1));
         histogramCursorMoved(tick);
     }
     else if (e->key() == Qt::Key_Right || e->key() == Qt::Key_D) {
-        previousTick = tick;
-        tick = std::min(lastVisibleTick, tick + 1);
+        setTick(std::min(lastVisibleTick, tick + 1));
         histogramCursorMoved(tick);
     }
     update();
@@ -179,7 +202,7 @@ void HistogramWidget::keyPressEvent(QKeyEvent* e) {
 
 
 void HistogramWidget::setTick(int newTick) {
-    previousTick = tick;
+    if (tick != newTick) previousTicks.emplace_back(tick);
     tick = newTick;
 }
 

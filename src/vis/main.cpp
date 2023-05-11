@@ -523,6 +523,7 @@ namespace { //anonymous namespace
             // Set Histogram Widget so Visualization Class knows about it!
             visualisation->setHistogramWidgetPtr(mainUI->bottomPanel);
             mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
+            mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);
 
             auto attributeNames = std::to_array<const char*>({ "fired", "fired fraction", "activity", "dampening", "current calcium",
                 "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });

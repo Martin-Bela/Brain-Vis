@@ -69,6 +69,7 @@ public:
     void changeDrawMode(HistogramDrawMode drawModeParam) {
         std::cout << "DrawMode: " << drawMode <<" \n";
         drawMode = drawModeParam;
+        dirty = true;
     }
    
 
@@ -101,12 +102,14 @@ private:
     HistogramDrawMode drawMode = Histogram;
 
     int tick = 1;
-    int previousTick = 1;
+    std::vector<int> previousTicks;
     int firstVisibleTick = 0;
     int lastVisibleTick = 500; // TODO Automatically set by Slider
 
     void paintHistogram(QPainter& painter);
+    void paintHistogramTick(QPainter& painter, int tick, float binSize, float tickSize);
     void paintSummary(QPainter& painter, bool redraw);
+    void paintSummaryTick(QPainter& painter, int tick, float tickSize, QPen& black, QPen& blue, QPen& red);
     void paintMinMaxLabels(QPainter &painter, QColor color);
 
     void recomputeSummaryMinMax();
