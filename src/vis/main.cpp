@@ -292,6 +292,7 @@ namespace { //anonymous namespace
         int edgeTimestep = edgesHidden;
 
         HistogramWidget* histogramW = nullptr;
+        HistogramSliderWidget* sliderWidget = nullptr;
         vtkSmartPointer<vtkTable> summaryData;
 
         void loadData() {
@@ -299,31 +300,7 @@ namespace { //anonymous namespace
             sphere->SetThetaResolution(10);
             sphere->SetRadius(0.6);
 
-            loadPositions(*points, point_map);
-            // Add the coordinates of the points to the graph
-#if 0
-            vtkNew<vtkMutableDirectedGraph> g;
-            g->SetNumberOfVertices(points->GetNumberOfPoints());
-            g->SetPoints(points);
-            loadEdges(*g, point_map);
-
-            vtkNew<vtkBoostDividedEdgeBundling> edgeBundler;
-            edgeBundler->SetInputDataObject(g);
-
-            // Convert the graph to a polydata
-            vtkNew<vtkGraphToPolyData> graphToPolyData;
-            graphToPolyData->SetInputDataObject(g);
-            //graphToPolyData->SetInputConnection(edgeBundler->GetOutputPort());
-            graphToPolyData->Update();
-
-            // Create a mapper and actor
-            vtkNew<vtkPolyDataMapper> mapper;
-            mapper->SetInputConnection(graphToPolyData->GetOutputPort());
-
-            vtkNew<vtkActor> graphActor;
-            graphActor->SetMapper(mapper);
-            graphActor->GetProperty()->SetColor(namedColors->GetColor3d("Blue").GetData());
-#endif       
+            loadPositions(*points, point_map);     
 
             // Convert the graph to a polydata
             graphToPolyData->EdgeGlyphOutputOn();
@@ -364,8 +341,9 @@ namespace { //anonymous namespace
             context.render();
         }
 
-        void setHistogramWidgetPtr(HistogramWidget* histogramWidget) {
+        void setHistogramWidgetPtr(HistogramWidget* histogramWidget, HistogramSliderWidget* slider) {
             histogramW = histogramWidget;
+            sliderWidget = slider;
         }
 
     private:
@@ -423,7 +401,8 @@ namespace { //anonymous namespace
 
             vtkSmartPointer<vtkTable> histogramData;
             loadHistogramsFromFile(colorAttribute, histogramData, summaryData);
-            histogramW->setData(std::move(histogramData), summaryData);
+            histogramW->setData(histogramData, summaryData);
+            sliderWidget->setData(histogramData, summaryData);
 
             auto t2 = std::chrono::high_resolution_clock::now();
             std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
@@ -471,7 +450,9 @@ namespace { //anonymous namespace
 
         void changeDrawMode(int modeType) {
             histogramW->changeDrawMode((HistogramDrawMode)modeType);
+            sliderWidget->changeDrawMode((HistogramDrawMode)modeType);
             reloadHistogram(currentTimestep, currentColorAttribute);
+            sliderWidget->update();
         }
 
         void changeColorAttribute(int colorAttribute) {
@@ -480,6 +461,7 @@ namespace { //anonymous namespace
             reloadColors(currentTimestep, colorAttribute);
             reloadHistogram(currentTimestep, colorAttribute);
             context.render();
+            sliderWidget->update();
         }
 
         void showEdges(int state) {
@@ -519,9 +501,10 @@ namespace { //anonymous namespace
             visualisationWidget.init();
             visualisationWidget->setRenderWindow(visualisation->context.renderWindow);
             mainUI->mainVisDock->addWidget(visualisationWidget.ptr());
-            
+
+            auto foo = mainUI->sliderWidget;
             // Set Histogram Widget so Visualization Class knows about it!
-            visualisation->setHistogramWidgetPtr(mainUI->bottomPanel);
+            visualisation->setHistogramWidgetPtr(mainUI->bottomPanel, mainUI->sliderWidget);
             mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
             mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);
 

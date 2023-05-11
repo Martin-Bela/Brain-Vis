@@ -167,6 +167,7 @@ void HistogramWidget::mousePressEvent(QMouseEvent* e) {
         setTick(round(pos / tickSize) + firstVisibleTick);
         histogramCursorMoved(tick);
     }
+    update();
 }
 
 
@@ -181,6 +182,7 @@ void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
         setTick(round(pos / tickSize) + firstVisibleTick);
         histogramCursorMoved(tick);
     }
+    update();
 }
 
 void HistogramWidget::resizeEvent(QResizeEvent* e) {

@@ -78,44 +78,28 @@ signals:
 
 
 protected:
-    void paintEvent(QPaintEvent *event) override;
-
-    void mousePressEvent(QMouseEvent*) override;
-    void mouseReleaseEvent(QMouseEvent*) override;
-    void mouseMoveEvent(QMouseEvent*) override;
-    void resizeEvent(QResizeEvent*) override;
-    void keyPressEvent(QKeyEvent* event) override;
-
-private:
-    bool antialiased = true;
-    bool loaded = false;
-    bool dirty = true;
-
     double max = 0; 
     double min = 0;
     double sMax = 0;
     double sMin = 0;
     
-
     vtkSmartPointer<vtkTable> histogramData;
     vtkSmartPointer<vtkTable> summaryData;
     HistogramDrawMode drawMode = Histogram;
-
     int tick = 1;
     std::vector<int> previousTicks;
     int firstVisibleTick = 0;
     int lastVisibleTick = 500; // TODO Automatically set by Slider
+    
+    int getYPos(double value);
+
+    void paintEvent(QPaintEvent *event) override;
 
     void paintHistogram(QPainter& painter);
     void paintHistogramTick(QPainter& painter, int tick, float binSize, float tickSize);
     void paintSummary(QPainter& painter, bool redraw);
     void paintSummaryTick(QPainter& painter, int tick, float tickSize, QPen& black, QPen& blue, QPen& red);
     void paintMinMaxLabels(QPainter &painter, QColor color);
-
-    void recomputeSummaryMinMax();
-    void recomputeMinMax();
-
-    int getYPos(double value);
 
     int getVisibleTicks() {
         return lastVisibleTick - firstVisibleTick;
@@ -133,6 +117,20 @@ private:
         }
         return 0;
     }
+
+private:
+    bool antialiased = true;
+    bool loaded = false;
+    bool dirty = true;
+
+    void mousePressEvent(QMouseEvent*) override;
+    void mouseReleaseEvent(QMouseEvent*) override;
+    void mouseMoveEvent(QMouseEvent*) override;
+    void resizeEvent(QResizeEvent*) override;
+    void keyPressEvent(QKeyEvent* event) override;
+
+    void recomputeSummaryMinMax();
+    void recomputeMinMax();
 
 };
 //! [0]
