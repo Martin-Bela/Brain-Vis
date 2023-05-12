@@ -29,6 +29,9 @@ void HistogramWidget::paintSummaryTick(QPainter& painter, int tick, float tickSi
     int x0 = (tick - firstVisibleTick) * tickSize;
     int x1 = (tick + 1 - firstVisibleTick) * tickSize;
 
+    if (tick >= summaryTable.size() - 1) {
+        return;
+    }
     painter.setPen(red);
     painter.drawLine(x0, getYPos(summaryTable[tick][2]), x1, getYPos(summaryTable[tick + 1][2]));
 
@@ -105,6 +108,10 @@ void HistogramWidget::paintHistogram(QPainter& painter) {
     else {
         for (int previousTick : previousTicks) {
             paintHistogramTick(painter, previousTick, binSize, tickSize);
+        }
+
+        if (drawMode != Both) {
+            previousTicks.clear();
         }
     }
 
@@ -183,6 +190,7 @@ void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void HistogramWidget::resizeEvent(QResizeEvent* e) {
+    std::cout << "Resize" << std::endl;
     dirty = true;
     update();
 }
@@ -201,7 +209,7 @@ void HistogramWidget::keyPressEvent(QKeyEvent* e) {
 
 
 void HistogramWidget::setTick(int newTick) {
-    if (tick != newTick) previousTicks.emplace_back(tick);
+    previousTicks.emplace_back(tick);
     tick = newTick;
 }
 

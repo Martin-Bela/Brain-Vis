@@ -9,7 +9,6 @@
 HistogramSliderWidget::HistogramSliderWidget(QWidget* parent) : HistogramWidget(parent)
 {
 	setVisibleRange(0, 9999);
-	//setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 }
 
 void HistogramSliderWidget::paintEvent(QPaintEvent* event)
@@ -22,20 +21,13 @@ void HistogramSliderWidget::paintEvent(QPaintEvent* event)
     switch (drawMode) {
     case Summary:
         paintSummary(painter, true);
-        painter.setPen(QPen({ 0, 255, 0 }));
-        paintMinMaxLabels(painter, Qt::black);
         break;
     case Histogram:
         paintHistogram(painter);
-        painter.setPen(QPen({ 255, 255, 255 }));
-        paintMinMaxLabels(painter, Qt::black);
         break;
     case Both:
         paintHistogram(painter);
-        painter.setPen(QPen({ 255, 255, 255 }));
         paintSummary(painter, false);
-        painter.setPen(QPen({ 0, 255, 0 }));
-        paintMinMaxLabels(painter, Qt::black);
         break;
     }
 
@@ -50,9 +42,9 @@ void HistogramSliderWidget::paintEvent(QPaintEvent* event)
     if (upperBoundary == lastVisibleTick) lowerBoundary = lastVisibleTick - 500;
     painter.fillRect(getXPos(lowerBoundary), 0, getXPos(upperBoundary) - getXPos(lowerBoundary), geometry().height(), brush);
 
-    int tickSize = 1;
     int x = getXPos(tick);
     painter.drawLine(x, 0, x, geometry().height());
+    dirty = false;
 }
 
 void HistogramSliderWidget::mousePressEvent(QMouseEvent* e)
@@ -80,8 +72,27 @@ void HistogramSliderWidget::paintHistogram(QPainter& painter)
     float binSize = (float)geometry().height() / (float) getBinCount();
 
     // TODO Use PixMap!
-    for (int x = firstVisibleTick; x < lastVisibleTick - dataBinSize; x += dataBinSize) {
-        paintHistogramTick(painter, x, binSize, tickSize);
+    if (dirty) {
+        for (int x = firstVisibleTick; x <= lastVisibleTick - dataBinSize; x += dataBinSize) {
+            paintHistogramTick(painter, x, binSize, tickSize);
+        }
+    }
+    else {
+        for (int previous : previousTicks) {
+            int lowerBoundary = std::max(previous - 250, firstVisibleTick);
+            int upperBoundary = std::min(previous + 250, lastVisibleTick);
+
+            if (lowerBoundary == firstVisibleTick) upperBoundary = 500;
+            if (upperBoundary == lastVisibleTick) lowerBoundary = lastVisibleTick - 500;
+            
+            for (int x = lowerBoundary; x <= upperBoundary; x += dataBinSize) {
+                if (x + dataBinSize >= lastVisibleTick) continue;
+                paintHistogramTick(painter, x, binSize, tickSize);
+            }
+        }
+        if (drawMode != Both) {
+            previousTicks.clear();
+        }
     }
 }
 
@@ -114,16 +125,33 @@ void HistogramSliderWidget::paintSummary(QPainter& painter, bool redraw)
     blue.setWidth(2);
     red.setWidth(2);
     // TODO Use PixMap?
-    if (redraw) {
-        painter.fillRect(0, 0, geometry().width(), geometry().height(), QBrush({ 255, 255, 255 }));
+    if (dirty) {
+        if (redraw) {
+            painter.fillRect(0, 0, geometry().width(), geometry().height(), QBrush({ 255, 255, 255 }));
+        }
+
+        for (int i = firstVisibleTick; i < lastVisibleTick; i += dataBinSize) {
+            paintSummaryTick(painter, i, tickSize, black, blue, red);
+        }
     }
+    else {
+        for (int previous : previousTicks) {
+            int lowerBoundary = std::max(previous - 250, firstVisibleTick);
+            int upperBoundary = std::min(previous + 250, lastVisibleTick);
+            if (lowerBoundary == firstVisibleTick) upperBoundary = 500;
+            if (upperBoundary == lastVisibleTick) lowerBoundary = lastVisibleTick - 500;
 
-    for (int i = firstVisibleTick; i <= lastVisibleTick - dataBinSize; i += dataBinSize) {
-        
-        int x0 = i / dataBinSize - firstVisibleTick;
-        int x1 = i / dataBinSize + tickSize - firstVisibleTick;
 
-        paintSummaryTick(painter, i, tickSize, black, blue, red);
+            if (redraw) {
+                painter.fillRect(getXPos(lowerBoundary), 0, getXPos(upperBoundary) - getXPos(lowerBoundary), geometry().height(), QBrush({255, 255, 255}));
+            }
+
+            for (int x = lowerBoundary; x <= upperBoundary; x += dataBinSize) {
+                if (x + dataBinSize >= lastVisibleTick) continue;
+                paintSummaryTick(painter, x, tickSize, black, blue, red);
+            }
+        }
+        previousTicks.clear();
     }
     
 }
@@ -135,20 +163,25 @@ void HistogramSliderWidget::paintSummaryTick(QPainter& painter, int tick, float 
 
     double max1 = 0.0, val1 = 0.0, min1 = 0.0, max2 = 0.0, val2 = 0.0, min2 = 0.0;
 
+    int n = 0;
     for (int b = 0; b < dataBinSize; b++) {
+        if (tick + b + dataBinSize >= summaryTable.size()) {
+            break;
+        }
         max1 += summaryTable[tick + b][2];
         min1 += summaryTable[tick + b][3];
         val1 += summaryTable[tick + b][0];
         max2 += summaryTable[tick + b + dataBinSize][2];
         min2 += summaryTable[tick + b + dataBinSize][3];
         val2 += summaryTable[tick + b + dataBinSize][0];
+        n++;
     }
-    max1 /= dataBinSize;
-    max2 /= dataBinSize;
-    val1 /= dataBinSize;
-    val2 /= dataBinSize;
-    min1 /= dataBinSize;
-    min2 /= dataBinSize;
+    max1 /= n;
+    max2 /= n;
+    val1 /= n;
+    val2 /= n;
+    min1 /= n;
+    min2 /= n;
 
     painter.setPen(red);
     painter.drawLine(x0, getYPos(max1), x1, getYPos(max2));

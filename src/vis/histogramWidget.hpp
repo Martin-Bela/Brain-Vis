@@ -44,6 +44,10 @@ public:
         dirty = true;
     }
 
+    void setDirty() {
+        dirty = true;
+    }
+
     void setTableData(std::vector<std::vector<double>>& histogramData, std::vector<std::vector<double>>& summaryData) {
         this->histogramTable = histogramData;
         this->summaryTable = summaryData;
@@ -121,7 +125,6 @@ private:
     void mouseMoveEvent(QMouseEvent*) override;
     void resizeEvent(QResizeEvent*) override;
     void keyPressEvent(QKeyEvent* event) override;
-
     void recomputeSummaryMinMax();
     void recomputeMinMax();
 

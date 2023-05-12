@@ -480,6 +480,10 @@ namespace { //anonymous namespace
             bool logEnabled = state == Qt::Checked;
 
             histogramW->logarithmicScaleEnabled = logEnabled;
+            sliderWidget->logarithmicScaleEnabled = logEnabled;
+            histogramW->setDirty();
+            sliderWidget->setDirty();
+            sliderWidget->update();
             histogramW->update();
         }
     };
@@ -508,6 +512,8 @@ namespace { //anonymous namespace
             visualisation->setHistogramWidgetPtr(mainUI->bottomPanel, mainUI->sliderWidget);
             mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
             mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);
+            mainUI->sliderWidget->setFocusPolicy(Qt::ClickFocus);
+            mainUI->sliderWidget->setAttribute(Qt::WA_OpaquePaintEvent);
 
             auto attributeNames = std::to_array<const char*>({ "fired", "fired fraction", "activity", "dampening", "current calcium",
                 "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
@@ -525,7 +531,6 @@ namespace { //anonymous namespace
 
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
             QObject::connect(mainUI->comboBox_2, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeDrawMode);
-            // QObject::connect(mainUI->slider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changeTimestepRange);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
             QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestep);
             QObject::connect(mainUI->sliderWidget, &HistogramSliderWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestepRange);
