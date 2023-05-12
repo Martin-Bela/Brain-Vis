@@ -190,7 +190,6 @@ void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void HistogramWidget::resizeEvent(QResizeEvent* e) {
-    std::cout << "Resize" << std::endl;
     dirty = true;
     update();
 }

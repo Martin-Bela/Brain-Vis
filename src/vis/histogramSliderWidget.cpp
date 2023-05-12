@@ -73,6 +73,7 @@ void HistogramSliderWidget::paintHistogram(QPainter& painter)
 
     // TODO Use PixMap!
     if (dirty) {
+        std::cout << getBinCount() << std::endl;
         for (int x = firstVisibleTick; x <= lastVisibleTick - dataBinSize; x += dataBinSize) {
             paintHistogramTick(painter, x, binSize, tickSize);
         }
@@ -110,7 +111,7 @@ void HistogramSliderWidget::paintHistogramTick(QPainter& painter, int x, float b
 
             val += v;
         }
-        QColor color = getMagmaColor(val);
+        QColor color = getMagmaColor(val / dataBinSize);
         painter.setBrush(QBrush(color));
         painter.fillRect(getXPos(x), y_pos * binSize, tickSize, binSize + 1, painter.brush());
     }
