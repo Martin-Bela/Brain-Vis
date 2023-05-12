@@ -65,8 +65,6 @@ void HistogramSliderWidget::mouseMoveEvent(QMouseEvent* e)
 
 void HistogramSliderWidget::paintHistogram(QPainter& painter)
 {
-    std::cout << "Hist paint" << std::endl;
-
     int tickSize = 1;
     int dataBinSize = tickSize * getVisibleTicks() / geometry().width();
     
@@ -78,10 +76,10 @@ void HistogramSliderWidget::paintHistogram(QPainter& painter)
            int y_pos = getBinCount() - y - 1;
            double val = 0;
            for (int i = 0; i < dataBinSize; i++) {
-                double v = histogramData->GetValue(x + i, y).ToDouble() / (max + 1);
+                double v = histogramTable[x + i][y] / (max + 1);
 
                 if (logarithmicScaleEnabled) {
-                    v = std::fmax(0, log(histogramData->GetValue(x + i, y).ToInt()) + 1) / (log(max) + 1);
+                    v = std::fmax(0, log(histogramTable[x + i][y]) + 1) / (log(max) + 1);
                 }
 
                 val += v;
@@ -125,12 +123,12 @@ void HistogramSliderWidget::paintSummary(QPainter& painter, bool redraw)
         double max1 = 0.0, val1 = 0.0, min1 = 0.0, max2 = 0.0, val2 = 0.0, min2 = 0.0;
 
         for (int b = 0; b < dataBinSize; b++) {
-            max1 += summaryData->GetValue(i + b + 1, 2).ToDouble();
-            min1 += summaryData->GetValue(i + b + 1, 3).ToDouble();
-            val1 += summaryData->GetValue(i + b + 1, 0).ToDouble();
-            max2 += summaryData->GetValue(i + b + 1 + dataBinSize, 2).ToDouble();
-            min2 += summaryData->GetValue(i + b + 1 + dataBinSize, 3).ToDouble();
-            val2 += summaryData->GetValue(i + b + 1 + dataBinSize, 0).ToDouble();
+            max1 += summaryTable[i + b][2];
+            min1 += summaryTable[i + b][3];
+            val1 += summaryTable[i + b][0];
+            max2 += summaryTable[i + b + dataBinSize][2];
+            min2 += summaryTable[i + b + dataBinSize][3];
+            val2 += summaryTable[i + b + dataBinSize][0];
         }
         max1 /= dataBinSize;
         max2 /= dataBinSize;

@@ -44,17 +44,9 @@ public:
         dirty = true;
     }
 
-    vtkTable &getHistogramDataRef() {
-        return *histogramData.Get();
-    }
-
-    vtkTable &getSummaryDataRef() {
-        return *summaryData.Get();
-    }
-
-    void setData(vtkSmartPointer<vtkTable> histogramData, vtkSmartPointer<vtkTable> summaryData) {
-        this->histogramData = std::move(histogramData);
-        this->summaryData = std::move(summaryData);
+    void setTableData(std::vector<std::vector<double>>& histogramData, std::vector<std::vector<double>>& summaryData) {
+        this->histogramTable = histogramData;
+        this->summaryTable = summaryData;
 
         loaded = true;
         dirty = true;
@@ -83,8 +75,8 @@ protected:
     double sMax = 0;
     double sMin = 0;
     
-    vtkSmartPointer<vtkTable> histogramData;
-    vtkSmartPointer<vtkTable> summaryData;
+    std::vector<std::vector<double>> histogramTable;
+    std::vector<std::vector<double>> summaryTable;
     HistogramDrawMode drawMode = Histogram;
     int tick = 1;
     std::vector<int> previousTicks;
@@ -107,13 +99,13 @@ protected:
 
     int getTimesteps() {
         if (loaded){
-            return histogramData->GetNumberOfRows();
+            return histogramTable.size();
         }
         return 0;
     }
     int getBinCount() {
         if (loaded) {
-            return histogramData->GetNumberOfColumns();
+            return histogramTable[0].size();
         }
         return 0;
     }

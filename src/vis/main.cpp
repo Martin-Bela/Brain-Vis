@@ -17,6 +17,7 @@
 #include <vtkPassThroughLayoutStrategy.h>
 #include <vtkEdgeLayout.h>
 #include <vtkSmartPointer.h>
+#include <vtkVariantArray.h>
 
 #include <QVTKOpenGLNativeWidget.h>
 
@@ -235,32 +236,28 @@ namespace { //anonymous namespace
     }
     assert(false);
     return "";
-}
+    }
 
-    void loadHistogramsFromFile(int attributeId, vtkSmartPointer<vtkTable> &widgetTable, vtkSmartPointer<vtkTable> &summaryData) {
-        auto path = (dataFolder / "monitors-hist-real/").string() + attributeToString(attributeId);
+    std::vector<std::vector<double>> loadFile(std::string path) {
+        std::vector<std::vector<double>> result;
         vtkNew<vtkDelimitedTextReader> reader;
         reader->SetFileName(path.data());
-        reader->DetectNumericColumnsOn();
         reader->SetFieldDelimiterCharacters(" ");
-        reader->SetHaveHeaders(false);
         reader->Update();
+          
+        vtkTable* table = reader->GetOutput();
+        for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++) {
+            if (table->GetValue(i, 0).ToString() == "#") continue;
+            
+            vtkVariantArray* row = table->GetRow(i);
+            std::vector<double> item;
+            for (int j = 0; j < row->GetNumberOfValues(); j++) {
+                item.push_back(row->GetValue(j).ToDouble());
+            }
+            result.push_back(item);
+        }
 
-        widgetTable = reader->GetOutput();
-
-        int timestepCount = widgetTable->GetNumberOfRows();
-        int histogramSize = widgetTable->GetNumberOfColumns();
-        //std::cout << "cols: " << table->GetNumberOfColumns() << ", rows:" << table->GetNumberOfRows() << "\n";        
-        
-        // Now we can load 'histogram' plot data
-
-        auto path2 = (dataFolder / "monitors-histogram/").string() + attributeToString(attributeId);
-        vtkNew<vtkDelimitedTextReader> reader2;
-        reader2->SetFileName(path2.data());
-        reader2->SetFieldDelimiterCharacters(" ");
-        reader2->Update();
-
-        summaryData = reader2->GetOutput();
+        return result;
     }
 
     class Visualisation : public QObject {
@@ -284,8 +281,8 @@ namespace { //anonymous namespace
 
         Range pointFilter = Range::Whole();
 
-        int currentTimestep;
-        int currentColorAttribute;
+        int currentTimestep = 0;
+        int currentColorAttribute = 0;
         bool edgesVisible = false;
 
         enum: int { edgesHidden = -1 };
@@ -293,7 +290,8 @@ namespace { //anonymous namespace
 
         HistogramWidget* histogramW = nullptr;
         HistogramSliderWidget* sliderWidget = nullptr;
-        vtkSmartPointer<vtkTable> summaryData;
+        std::vector<std::vector<double>> histogramData[12];
+        std::vector<std::vector<double>> summaryData[12];
 
         void loadData() {
             sphere->SetPhiResolution(10);
@@ -335,6 +333,7 @@ namespace { //anonymous namespace
         }
 
         void firstRender() {
+            // loadTableData();
             loadHistogramData(0);
             reloadColors(0, 0);
             reloadEdges();
@@ -354,8 +353,8 @@ namespace { //anonymous namespace
 
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
 
-            double propMin = summaryData->GetValue(timestep + 1, 3).ToDouble();
-            double propMax = summaryData->GetValue(timestep + 1, 2).ToDouble();
+            double propMin = summaryData[currentColorAttribute][timestep][3];
+            double propMax = summaryData[currentColorAttribute][timestep][2];
             auto colors = loadColors(timestep, colorAttribute, point_map, propMin, propMax, pointFilter);
 
             //auto colors = colorsFromPositions(*points);
@@ -398,11 +397,13 @@ namespace { //anonymous namespace
 
         void loadHistogramData(int colorAttribute) {
             auto t1 = std::chrono::high_resolution_clock::now();
+            if (histogramData[colorAttribute].empty()) {
+                histogramData[colorAttribute] = loadFile((dataFolder / "monitors-hist-real/").string() + attributeToString(colorAttribute));
+                summaryData[colorAttribute] = loadFile((dataFolder / "monitors-histogram/").string() + attributeToString(colorAttribute));
+            }
 
-            vtkSmartPointer<vtkTable> histogramData;
-            loadHistogramsFromFile(colorAttribute, histogramData, summaryData);
-            histogramW->setData(histogramData, summaryData);
-            sliderWidget->setData(histogramData, summaryData);
+            histogramW->setTableData(histogramData[colorAttribute], summaryData[colorAttribute]);
+            sliderWidget->setTableData(histogramData[colorAttribute], summaryData[colorAttribute]);
 
             auto t2 = std::chrono::high_resolution_clock::now();
             std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";

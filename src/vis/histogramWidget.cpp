@@ -30,16 +30,13 @@ void HistogramWidget::paintSummaryTick(QPainter& painter, int tick, float tickSi
     int x1 = (tick + 1 - firstVisibleTick) * tickSize;
 
     painter.setPen(red);
-    painter.drawLine(x0, getYPos(summaryData->GetValue(tick + 1, 2).ToDouble()),
-        x1, getYPos(summaryData->GetValue(tick + 2, 2).ToDouble()));
+    painter.drawLine(x0, getYPos(summaryTable[tick][2]), x1, getYPos(summaryTable[tick + 1][2]));
 
     painter.setPen(blue);
-    painter.drawLine(x0, getYPos(summaryData->GetValue(tick + 1, 3).ToDouble()),
-        x1, getYPos(summaryData->GetValue(tick + 2, 3).ToDouble()));
+    painter.drawLine(x0, getYPos(summaryTable[tick][3]), x1, getYPos(summaryTable[tick + 1][3]));
 
     painter.setPen(black);
-    painter.drawLine(x0, getYPos(summaryData->GetValue(tick + 1, 0).ToDouble()),
-        x1, getYPos(summaryData->GetValue(tick + 2, 0).ToDouble()));
+    painter.drawLine(x0, getYPos(summaryTable[tick][0]), x1, getYPos(summaryTable[tick + 1][0]));
 }
 
 void HistogramWidget::paintSummary(QPainter& painter, bool redraw) {
@@ -79,10 +76,10 @@ void HistogramWidget::paintSummary(QPainter& painter, bool redraw) {
 void HistogramWidget::paintHistogramTick(QPainter& painter, int tick, float binSize, float tickSize) {
     for (int y = 0; y < getBinCount(); y++) {
         int y_pos = getBinCount() - y - 1;
-        double v = histogramData->GetValue(tick, y).ToDouble() / (max + 1);
+        double v = histogramTable[tick][y] / (max + 1);
 
         if (logarithmicScaleEnabled) {
-            v = std::fmax(0, log(histogramData->GetValue(tick, y).ToInt()) + 1) / (log(max) + 1);
+            v = std::fmax(0, log(histogramTable[tick][y]) + 1) / (log(max) + 1);
         }
 
         QColor color = getMagmaColor(v);
@@ -93,8 +90,8 @@ void HistogramWidget::paintHistogramTick(QPainter& painter, int tick, float binS
 
 
 void HistogramWidget::paintHistogram(QPainter& painter) {  
-    float tickSize = (float) geometry().width() / (float)getVisibleTicks();
-    float binSize = (float) geometry().height() / (float)getBinCount();
+    float tickSize = (float) geometry().width() / (float) getVisibleTicks();
+    float binSize = (float) geometry().height() / (float) getBinCount();
     
     std::cout << "Bins:" << getBinCount() << ", Steps: " << getVisibleTicks() << "\n";
     std::cout << "BinSize:" << binSize << ", TimestepSize: " << tickSize << "\n";
@@ -211,19 +208,19 @@ void HistogramWidget::setTick(int newTick) {
 void HistogramWidget::recomputeSummaryMinMax() {
     sMax = -INFINITY;
     sMin = INFINITY;
-    for (int i = 1; i < summaryData->GetNumberOfRows(); i++) {
-        sMax = std::fmax(sMax, summaryData->GetValue(i, 2).ToDouble());
-        sMin = std::fmin(sMin, summaryData->GetValue(i, 3).ToDouble());
+    for (int i = 0; i < summaryTable.size(); i++) {
+        sMax = std::fmax(sMax, summaryTable[i][2]);
+        sMin = std::fmin(sMin, summaryTable[i][3]);
     }
 }
 
 void HistogramWidget::recomputeMinMax() {
     max = 0;
     min = INFINITY;
-    for (int i = 0; i < histogramData->GetNumberOfRows(); i++) {
-        for (int j = 0; j < histogramData->GetNumberOfColumns(); j++) {
-            max = std::fmax(max, histogramData->GetValue( i,j).ToDouble());
-            min = std::fmin(min, histogramData->GetValue( i, j).ToDouble());
+    for (int i = 0; i < histogramTable.size(); i++) {
+        for (int j = 0; j < histogramTable[0].size(); j++) {
+            max = std::fmax(max, histogramTable[i][j]);
+            min = std::fmin(min, histogramTable[i][j]);
         }
     }
 
