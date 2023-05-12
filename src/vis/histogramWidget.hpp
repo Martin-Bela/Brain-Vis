@@ -70,6 +70,10 @@ signals:
 
 
 protected:
+    bool antialiased = true;
+    bool dirty = true;
+    bool loaded = false;
+    
     double max = 0; 
     double min = 0;
     double sMax = 0;
@@ -81,7 +85,7 @@ protected:
     int tick = 1;
     std::vector<int> previousTicks;
     int firstVisibleTick = 0;
-    int lastVisibleTick = 500; // TODO Automatically set by Slider
+    int lastVisibleTick = 500;
     
     int getYPos(double value);
 
@@ -111,9 +115,6 @@ protected:
     }
 
 private:
-    bool antialiased = true;
-    bool loaded = false;
-    bool dirty = true;
 
     void mousePressEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
