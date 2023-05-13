@@ -6,7 +6,6 @@
 
 class HistogramSliderWidget : public HistogramWidget
 {
-    
     Q_OBJECT
 
 public:

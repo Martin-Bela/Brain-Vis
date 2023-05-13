@@ -161,7 +161,7 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
 
     float tickSize =  (float) geometry().width() / (float) getVisibleTicks();
     int x = (tick - firstVisibleTick) * tickSize;
-    painter.drawLine(x , 0, x, geometry().height());
+    painter.fillRect(x , 0, tickSize, geometry().height(), QColor::fromRgb(0,0,0));
 }
 
 void HistogramWidget::mousePressEvent(QMouseEvent* e) {
