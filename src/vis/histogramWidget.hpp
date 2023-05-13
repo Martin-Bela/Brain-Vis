@@ -16,6 +16,8 @@
 #include <vtkNew.h>
 #include <vtkSmartPointer.h>
 
+#include <span>
+
 
 
 enum HistogramDrawMode {
@@ -28,7 +30,6 @@ enum HistogramDrawMode {
 class HistogramWidget : public QWidget
 {
     Q_OBJECT
-
 
 public:  
 
@@ -48,7 +49,7 @@ public:
         dirty = true;
     }
 
-    void setTableData(std::vector<std::vector<double>>& histogramData, std::vector<std::vector<double>>& summaryData) {
+    void setTableData(std::span<std::vector<int>> histogramData, std::span<std::vector<double>> summaryData) {
         this->histogramTable = histogramData;
         this->summaryTable = summaryData;
 
@@ -83,8 +84,8 @@ protected:
     double sMax = 0;
     double sMin = 0;
     
-    std::vector<std::vector<double>> histogramTable;
-    std::vector<std::vector<double>> summaryTable;
+    std::span<std::vector<int>> histogramTable{};
+    std::span<std::vector<double>> summaryTable{};
     HistogramDrawMode drawMode = Histogram;
     int tick = 1;
     std::vector<int> previousTicks;

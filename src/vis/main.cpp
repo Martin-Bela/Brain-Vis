@@ -45,6 +45,7 @@
 #include <unordered_map>
 #include <optional>
 #include <limits>
+#include <ranges>
 
 
 namespace { //anonymous namespace
@@ -220,45 +221,111 @@ namespace { //anonymous namespace
     }
 
     std::string attributeToString(int attribute) {
-    switch (attribute) {
-    case 0: return "fired.txt";
-    case 1: return "firedFraction.txt";
-    case 2: return "electricActivity.txt";
-    case 3: return "secondaryVariable.txt";
-    case 4: return "calcium.txt";
-    case 5: return "targetCalcium.txt";
-    case 6: return "synapticInput.txt";
-    case 7: return "backgroundActivity.txt";
-    case 8: return "grownAxons.txt";
-    case 9: return "connectedAxons.txt";
-    case 10: return "grownDendrites.txt";
-    case 11: return "connectedDendrites.txt";
-    }
-    assert(false);
-    return "";
-    }
-
-    std::vector<std::vector<double>> loadFile(std::string path) {
-        std::vector<std::vector<double>> result;
-        vtkNew<vtkDelimitedTextReader> reader;
-        reader->SetFileName(path.data());
-        reader->SetFieldDelimiterCharacters(" ");
-        reader->Update();
-          
-        vtkTable* table = reader->GetOutput();
-        for (vtkIdType i = 0; i < table->GetNumberOfRows(); i++) {
-            if (table->GetValue(i, 0).ToString() == "#") continue;
-            
-            vtkVariantArray* row = table->GetRow(i);
-            std::vector<double> item;
-            for (int j = 0; j < row->GetNumberOfValues(); j++) {
-                item.push_back(row->GetValue(j).ToDouble());
-            }
-            result.push_back(item);
+        switch (attribute) {
+            case 0: return "fired.txt";
+            case 1: return "firedFraction.txt";
+            case 2: return "electricActivity.txt";
+            case 3: return "secondaryVariable.txt";
+            case 4: return "calcium.txt";
+            case 5: return "targetCalcium.txt";
+            case 6: return "synapticInput.txt";
+            case 7: return "backgroundActivity.txt";
+            case 8: return "grownAxons.txt";
+            case 9: return "connectedAxons.txt";
+            case 10: return "grownDendrites.txt";
+            case 11: return "connectedDendrites.txt";
         }
+        assert(false);
+        return "";
+    }
 
+    template<typename StoredType, char deliminer>
+    std::vector<std::vector<StoredType>> parseCSV(std::string path) {
+
+        std::vector<std::vector<StoredType>> result;
+        std::ifstream file(path);
+        checkFile(file);
+            
+        std::string line;
+        while (file.good()) {
+            if (line.size() != 0 && line[0] != '#') {
+                result.emplace_back();
+                for(auto token: std::ranges::views::split(line, deliminer)){
+                    StoredType item;
+                    auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), item);
+                    if (ec != std::errc() || ptr != token.data() + token.size()) {
+                        assert(false);
+                    }
+                    result.back().emplace_back(item);
+                }
+            }
+            std::getline(file, line);
+        }
         return result;
     }
+
+    class HistogramDataLoader {
+        enum dataState { Unloaded, Loading, Loaded };
+
+        std::array<std::atomic<dataState>, 12> dataState;
+        std::array<std::vector<std::vector<int>>, 12> histogramData;
+        std::array<std::vector<std::vector<double>>, 12> summaryData;
+
+        std::atomic<bool> continueBackground = true;
+        std::thread backgroundThread;
+
+        void ensureLoaded(int colorAttribute) {
+            if (dataState[colorAttribute] == Loaded) {
+                return;
+            }
+
+            auto unloaded = Unloaded;
+            if (dataState[colorAttribute].compare_exchange_strong(unloaded, Loading)) {
+                histogramData[colorAttribute] = parseCSV<int, ' '>((dataFolder / "monitors-hist-real/").string() + attributeToString(colorAttribute));
+                summaryData[colorAttribute] = parseCSV<double, ' '>((dataFolder / "monitors-histogram/").string() + attributeToString(colorAttribute));
+                dataState[colorAttribute] = Loaded;
+                dataState[colorAttribute].notify_all();
+            }
+            else {
+                dataState[colorAttribute].wait(Loaded);
+            }
+        }
+
+    public:
+        std::span<std::vector<double>> getSummaryData(int colorAttribute) {
+            ensureLoaded(colorAttribute);
+            return summaryData[colorAttribute];
+        }
+
+        std::span<std::vector<int>> getHistogramData(int colorAttribute) {
+            ensureLoaded(colorAttribute);
+            return histogramData[colorAttribute];
+        }
+
+        HistogramDataLoader() {
+            backgroundThread = std::thread([this]() {
+                for (int i = 0; i < 12; i++) {
+                    if (!continueBackground) {
+                        return;
+                    }
+                    ensureLoaded(i);
+                }
+            });
+        }
+        
+        ~HistogramDataLoader() {
+            continueBackground = false;
+            if (backgroundThread.joinable()) {
+                backgroundThread.join();
+            }
+        };
+
+        // Disable copying and moving
+        HistogramDataLoader(const HistogramDataLoader& other) = delete;
+        HistogramDataLoader& operator=(const HistogramDataLoader& other) = delete;
+        HistogramDataLoader(HistogramDataLoader&& other) = delete;
+        HistogramDataLoader& operator=(HistogramDataLoader&& other) = delete;
+    };
 
     class Visualisation : public QObject {
     public:
@@ -285,13 +352,13 @@ namespace { //anonymous namespace
         int currentColorAttribute = 0;
         bool edgesVisible = false;
 
+        HistogramDataLoader histogramDataLoader;
+
         enum: int { edgesHidden = -1 };
         int edgeTimestep = edgesHidden;
 
         HistogramWidget* histogramW = nullptr;
         HistogramSliderWidget* sliderWidget = nullptr;
-        std::vector<std::vector<double>> histogramData[12];
-        std::vector<std::vector<double>> summaryData[12];
 
         void loadData() {
             sphere->SetPhiResolution(10);
@@ -353,8 +420,9 @@ namespace { //anonymous namespace
 
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
 
-            double propMin = summaryData[currentColorAttribute][timestep][3];
-            double propMax = summaryData[currentColorAttribute][timestep][2];
+            auto summaryData = histogramDataLoader.getSummaryData(currentColorAttribute);
+            double propMin = summaryData[timestep][3];
+            double propMax = summaryData[timestep][2];
             auto colors = loadColors(timestep, colorAttribute, point_map, propMin, propMax, pointFilter);
 
             //auto colors = colorsFromPositions(*points);
@@ -397,13 +465,12 @@ namespace { //anonymous namespace
 
         void loadHistogramData(int colorAttribute) {
             auto t1 = std::chrono::high_resolution_clock::now();
-            if (histogramData[colorAttribute].empty()) {
-                histogramData[colorAttribute] = loadFile((dataFolder / "monitors-hist-real/").string() + attributeToString(colorAttribute));
-                summaryData[colorAttribute] = loadFile((dataFolder / "monitors-histogram/").string() + attributeToString(colorAttribute));
-            }
 
-            histogramW->setTableData(histogramData[colorAttribute], summaryData[colorAttribute]);
-            sliderWidget->setTableData(histogramData[colorAttribute], summaryData[colorAttribute]);
+            auto histData = histogramDataLoader.getHistogramData(colorAttribute);
+            auto summData = histogramDataLoader.getSummaryData(colorAttribute);
+
+            histogramW->setTableData(histData, summData);
+            sliderWidget->setTableData(histData, summData);
 
             auto t2 = std::chrono::high_resolution_clock::now();
             std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
