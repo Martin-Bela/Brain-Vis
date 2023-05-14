@@ -18,6 +18,7 @@
 #include <vtkEdgeLayout.h>
 #include <vtkSmartPointer.h>
 #include <vtkVariantArray.h>
+#include <vtkPointGaussianMapper.h>
 
 #include <QVTKOpenGLNativeWidget.h>
 
@@ -60,6 +61,8 @@ namespace { //anonymous namespace
         vtkNew<vtkPoints> points;
         vtkNew<vtkPoints> aggregatedPoints;
         vtkNew<vtkPolyData> polyData;
+        vtkNew<vtkPointGaussianMapper> pointGaussianMapper;
+
         vtkNew<vtkGlyph3DMapper> glyph3D;
 
         vtkNew<vtkActor> actor;
@@ -114,14 +117,41 @@ namespace { //anonymous namespace
 
             // Points
             polyData->SetPoints(points);
+
+
             
             glyph3D->SetInputData(polyData);
             glyph3D->SetSourceConnection(sphere->GetOutputPort());
             glyph3D->Update();
+
+            //double* range = polyData->GetPointData()->GetScalars()->GetRange();
+
+            pointGaussianMapper->SetInputData(polyData);
+            //pointGaussianMapper->SetScalarRange(range);
+            pointGaussianMapper->SetScaleFactor(1);
+            pointGaussianMapper->EmissiveOff();
+
+
+            fstream shaderFile = fstream();
+            shaderFile.open("src/vis/shaders/bilboard.frag", ios::in);
+
+            if (!shaderFile) {
+		        cout << "No such file";
+                exit(1);
+	        }
             
-            actor->SetMapper(glyph3D);
-            actor->GetProperty()->SetPointSize(5);
-            actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
+            std::stringstream ss;
+            ss << shaderFile.rdbuf(); //read the file
+            std::string shaderCode = ss.str(); //str holds the content of the file
+            shaderFile.close();
+
+            pointGaussianMapper->SetSplatShaderCode(shaderCode.c_str());
+            // clang-format on
+            
+            
+            actor->SetMapper(pointGaussianMapper);
+            //actor->GetProperty()->SetPointSize(30);
+            //actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
             context.init({ actor, arrowActor });
         }

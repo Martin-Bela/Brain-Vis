@@ -106,13 +106,13 @@ protected:
         return lastVisibleTick - firstVisibleTick;
     }
 
-    int getTimesteps() {
+    size_t getTimesteps() {
         if (loaded){
             return histogramTable.size();
         }
         return 0;
     }
-    int getBinCount() {
+    size_t getBinCount() {
         if (loaded) {
             return histogramTable[0].size();
         }
