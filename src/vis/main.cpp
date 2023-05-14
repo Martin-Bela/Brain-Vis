@@ -132,26 +132,33 @@ namespace { //anonymous namespace
             pointGaussianMapper->EmissiveOff();
 
 
+
             fstream shaderFile = fstream();
             shaderFile.open("src/vis/shaders/bilboard.frag", ios::in);
 
-            if (!shaderFile) {
-		        cout << "No such file";
-                exit(1);
-	        }
-            
-            std::stringstream ss;
-            ss << shaderFile.rdbuf(); //read the file
-            std::string shaderCode = ss.str(); //str holds the content of the file
-            shaderFile.close();
+            if (shaderFile) {
+                std::stringstream ss;
+                ss << shaderFile.rdbuf(); //read the file
+                std::string shaderCode = ss.str(); //str holds the content of the file
+                shaderFile.close();
 
-            pointGaussianMapper->SetSplatShaderCode(shaderCode.c_str());
+                pointGaussianMapper->SetSplatShaderCode(shaderCode.c_str());
             // clang-format on
+
+            } else {
+		        cout << "Couldnt load shader, fallback to default shader";
+                pointGaussianMapper->SetSplatShaderCode(
+                    #include "vis/shaders/_bilboard_fallback.frag"
+                );
+                //exit(1);
+	        };
+            
             
             
             actor->SetMapper(pointGaussianMapper);
-            //actor->GetProperty()->SetPointSize(30);
-            //actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
+            //actor->GetProperty()->SetOpacity(0.5);
+            actor->GetProperty()->SetPointSize(30);
+            actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
             context.init({ actor, arrowActor });
         }

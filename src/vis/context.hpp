@@ -26,6 +26,8 @@ public:
         camera->Elevation(-90);
         camera->SetViewUp(0, 0, 1);
 
+        std::cout << camera->GetNearPlaneScale();
+
         // The render window is the actual GUI window
         // that appears on the computer screen
         renderWindow->AddRenderer(renderer);
