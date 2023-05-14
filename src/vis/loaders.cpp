@@ -36,7 +36,7 @@
 
 
 
-void loadPositions(vtkPoints& positions, std::vector<uint16_t>& mapping) {
+void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping) {
     vtkNew<vtkDelimitedTextReader> reader;
     std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
     reader->SetFileName(path.data());
@@ -58,8 +58,10 @@ void loadPositions(vtkPoints& positions, std::vector<uint16_t>& mapping) {
                 (table->GetValue(i, 3)).ToDouble()
         };
 
-        if (point_index == -1 || manhattanDist(positions.GetPoint(point_index), point) > 0.5) {
-            positions.InsertNextPoint(point);
+        positions.InsertNextPoint(point);
+
+        if (point_index == -1 || manhattanDist(aggregatedPositions.GetPoint(point_index), point) > 0.5) {
+            aggregatedPositions.InsertNextPoint(point);
             point_index++;
         }
         mapping[(table->GetValue(i, 0)).ToInt() - 1] = point_index;
@@ -83,8 +85,7 @@ void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timest
     }
 }
 
-vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::vector<uint16_t>& map, 
-    double mini, double maxi, Range pointFilter) {
+vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double mini, double maxi, Range pointFilter) {
     const int pointCount = 50000;
     auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
     
@@ -103,7 +104,7 @@ vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const 
     for (int i = 0; i < pointCount; i++) {
         NeuronProperties neuron = reader.read();
 
-        if (i == 0 || map[i] == map[i - 1]) continue;
+        //if (i == 0 || map[i] == map[i - 1]) continue;
 
         auto val = (neuron.projection(colorAttribute) - mini) / (maxi - mini);
         QColor color = colorMixer.getColor(val);

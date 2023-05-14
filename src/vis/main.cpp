@@ -58,6 +58,7 @@ namespace { //anonymous namespace
         Context context;
         vtkNew<vtkSphereSource> sphere;
         vtkNew<vtkPoints> points;
+        vtkNew<vtkPoints> aggregatedPoints;
         vtkNew<vtkPolyData> polyData;
         vtkNew<vtkGlyph3DMapper> glyph3D;
 
@@ -89,9 +90,9 @@ namespace { //anonymous namespace
         void loadData() {
             sphere->SetPhiResolution(10);
             sphere->SetThetaResolution(10);
-            sphere->SetRadius(0.6);
+            sphere->SetRadius(0.08);
 
-            loadPositions(*points, point_map);     
+            loadPositions(*points, *aggregatedPoints, point_map);
 
             // Convert the graph to a polydata
             graphToPolyData->EdgeGlyphOutputOn();
@@ -119,7 +120,7 @@ namespace { //anonymous namespace
             glyph3D->Update();
             
             actor->SetMapper(glyph3D);
-            actor->GetProperty()->SetPointSize(30);
+            actor->GetProperty()->SetPointSize(5);
             actor->GetProperty()->SetColor(namedColors->GetColor3d("Tomato").GetData());
 
             context.init({ actor, arrowActor });
@@ -149,7 +150,7 @@ namespace { //anonymous namespace
             auto summaryData = histogramDataLoader.getSummaryData(currentColorAttribute);
             double propMin = summaryData[timestep][3];
             double propMax = summaryData[timestep][2];
-            auto colors = loadColors(timestep, colorAttribute, point_map, propMin, propMax, pointFilter);
+            auto colors = loadColors(timestep, colorAttribute, propMin, propMax, pointFilter);
 
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
@@ -165,8 +166,8 @@ namespace { //anonymous namespace
             std::cout << std::format("Edges reloaded with timestep {}\n", newEdgeTimestep);
 
             vtkNew<vtkMutableDirectedGraph> g;
-            g->SetNumberOfVertices(points->GetNumberOfPoints());
-            g->SetPoints(points);
+            g->SetNumberOfVertices(aggregatedPoints->GetNumberOfPoints());
+            g->SetPoints(aggregatedPoints);
             
             if (edgesVisible) {
                 loadEdges(*g, point_map, currentTimestep);
@@ -223,6 +224,12 @@ namespace { //anonymous namespace
             reloadColors(timestep, currentColorAttribute);
             reloadHistogram(currentTimestep, currentColorAttribute);
             reloadEdges();
+            context.render();
+        }
+
+        void changePointSize(int size) {
+            sphere->SetRadius(size / 100.0);
+            glyph3D->Update();
             context.render();
         }
 
@@ -303,6 +310,7 @@ namespace { //anonymous namespace
             auto foo = mainUI->sliderWidget;
             // Set Histogram Widget so Visualization Class knows about it!
             visualisation->setHistogramWidgetPtr(mainUI->bottomPanel, mainUI->sliderWidget);
+            
             mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
             mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);
             mainUI->sliderWidget->setFocusPolicy(Qt::ClickFocus);
@@ -313,13 +321,11 @@ namespace { //anonymous namespace
             for (auto name : attributeNames) {
                 mainUI->comboBox->addItem(name);
             }
-            mainUI->comboBox_2->addItem("Histogram");
-            mainUI->comboBox_2->addItem("Summary");
-            mainUI->comboBox_2->addItem("Both");
 
             // Remove title bars
             mainUI->leftDockWidget->setTitleBarWidget(new QWidget());
             mainUI->bottomDockWidget->setTitleBarWidget(new QWidget());
+            
             mainUI->bottomDockWidget->setFixedHeight(200);
 
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
@@ -329,6 +335,7 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->sliderWidget, &HistogramSliderWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestepRange);
             QObject::connect(mainUI->logScaleCheckbox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::logCheckboxChange);
             QObject::connect(mainUI->rangeSlider, &QRangeSlider::valueChange, visualisation.ptr(), &Visualisation::setPointFilter);
+            QObject::connect(mainUI->pointSizeSlider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changePointSize);
         }
 
         int run() {
@@ -344,9 +351,6 @@ namespace { //anonymous namespace
 
         DeferredInit<Visualisation> visualisation;
         DeferredInit<QVTKOpenGLNativeWidget> visualisationWidget;
-
-        //DeferredInit<HistogramWidget> histogramWidget;
-
     };
 
 }//namespace

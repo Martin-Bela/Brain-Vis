@@ -33,8 +33,6 @@ signals:
     void lowValueChange(unsigned int lowValue);
     void highValueChange(unsigned int highValue);
     void valueChange(unsigned int lowValue, unsigned int highValue);
-
-
 private:
     void mousePressEvent(QMouseEvent *e);
     void mouseReleaseEvent(QMouseEvent *e);

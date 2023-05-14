@@ -12,8 +12,6 @@
 #include <thread>
 #include <span>
 
-
-
 #include "../utility.hpp"
 
 struct Range {
@@ -30,11 +28,13 @@ struct Range {
     };
 
 
-extern void loadPositions(vtkPoints& positions, std::vector<uint16_t>& mapping);
-extern vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, const std::vector<uint16_t>& map, 
-    double mini, double maxi, Range pointFilter);
-extern void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timestep);
-extern std::string attributeToString(int attribute);
+void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping);
+
+vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double mini, double maxi, Range pointFilter);
+
+void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timestep);
+
+std::string attributeToString(int attribute);
 
 
 
