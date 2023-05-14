@@ -25,7 +25,7 @@ target_link_libraries(PreprocessNetwork PRIVATE ${VTK_LIBRARIES})
 
 # Brain visualisation
 file(GLOB VIS_FILES CONFIGURE_DEPENDS "src/vis/*")
-add_executable("${PROJECT_NAME}" ${VIS_FILES} "src/vis/mainWindow.ui" "src/utility.hpp" "src/edge.hpp" "src/neuronProperties.hpp" "src/vis/magmaColormap.cpp")
+add_executable("${PROJECT_NAME}" ${VIS_FILES} "src/vis/mainWindow.ui" "src/utility.hpp" "src/edge.hpp" "src/neuronProperties.hpp" "src/vis/magmaColormap.cpp" "src/vis/loaders.cpp")
 target_link_libraries("${PROJECT_NAME}" PRIVATE ${VTK_LIBRARIES} ${QT_MODULES})
 
 
