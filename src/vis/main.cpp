@@ -67,8 +67,6 @@ namespace { //anonymous namespace
         vtkNew<vtkPolyData> polyData;
         vtkNew<vtkPointGaussianMapper> pointGaussianMapper;
 
-        vtkNew<vtkGlyph3DMapper> glyph3D;
-
         vtkNew<vtkActor> actor;
         vtkNew<vtkActor> arrowActor;
 
@@ -122,12 +120,6 @@ namespace { //anonymous namespace
             // Points
             polyData->SetPoints(points);
 
-
-            
-            glyph3D->SetInputData(polyData);
-            glyph3D->SetSourceConnection(sphere->GetOutputPort());
-            glyph3D->Update();
-
             //double* range = polyData->GetPointData()->GetScalars()->GetRange();
 
             pointGaussianMapper->SetInputData(polyData);
@@ -136,7 +128,7 @@ namespace { //anonymous namespace
             pointGaussianMapper->EmissiveOff();
 
             std::ifstream shaderFile("src/vis/shaders/bilboard.frag");
-            if (shaderFile) {
+            if (false) {
                 std::string shaderCode = readWholeFile(shaderFile);
                 pointGaussianMapper->SetSplatShaderCode(shaderCode.c_str());
             } else {
@@ -185,7 +177,6 @@ namespace { //anonymous namespace
 
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
-            glyph3D->Update();
         }
 
         void reloadEdges() {
@@ -261,7 +252,6 @@ namespace { //anonymous namespace
         void changePointSize(int size) {
             pointGaussianMapper->SetScaleFactor(size / 100.0);
             //sphere->SetRadius(size / 100.0);
-            glyph3D->Update();
             context.render();
         }
 
