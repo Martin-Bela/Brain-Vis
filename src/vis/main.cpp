@@ -52,6 +52,10 @@
 
 namespace { //anonymous namespace
 
+    std::string readWholeFile(std::ifstream& file) {
+        checkFile(file);
+        return std::string(std::istreambuf_iterator<char>{file}, {});
+    }
  
 
     class Visualisation : public QObject {
@@ -128,23 +132,13 @@ namespace { //anonymous namespace
 
             pointGaussianMapper->SetInputData(polyData);
             //pointGaussianMapper->SetScalarRange(range);
-            pointGaussianMapper->SetScaleFactor(1);
+            pointGaussianMapper->SetScaleFactor(0.9);
             pointGaussianMapper->EmissiveOff();
 
-
-
-            fstream shaderFile = fstream();
-            shaderFile.open("src/vis/shaders/bilboard.frag", ios::in);
-
+            std::ifstream shaderFile("src/vis/shaders/bilboard.frag");
             if (shaderFile) {
-                std::stringstream ss;
-                ss << shaderFile.rdbuf(); //read the file
-                std::string shaderCode = ss.str(); //str holds the content of the file
-                shaderFile.close();
-
+                std::string shaderCode = readWholeFile(shaderFile);
                 pointGaussianMapper->SetSplatShaderCode(shaderCode.c_str());
-            // clang-format on
-
             } else {
 		        cout << "Couldnt load shader, fallback to default shader";
                 pointGaussianMapper->SetSplatShaderCode(
@@ -265,7 +259,8 @@ namespace { //anonymous namespace
         }
 
         void changePointSize(int size) {
-            sphere->SetRadius(size / 100.0);
+            pointGaussianMapper->SetScaleFactor(size / 100.0);
+            //sphere->SetRadius(size / 100.0);
             glyph3D->Update();
             context.render();
         }
