@@ -91,6 +91,7 @@ namespace { //anonymous namespace
 
         HistogramWidget* histogramW = nullptr;
         HistogramSliderWidget* sliderWidget = nullptr;
+        QRangeSlider* rangeSlider = nullptr;
 
         void loadData() {
             sphere->SetPhiResolution(10);
@@ -157,9 +158,10 @@ namespace { //anonymous namespace
             context.render();
         }
 
-        void setHistogramWidgetPtr(HistogramWidget* histogramWidget, HistogramSliderWidget* slider) {
+        void setHistogramWidgetPtr(HistogramWidget* histogramWidget, HistogramSliderWidget* slider, QRangeSlider* rangeSlider) {
             histogramW = histogramWidget;
             sliderWidget = slider;
+            this->rangeSlider = rangeSlider;
         }
 
     private:
@@ -224,6 +226,9 @@ namespace { //anonymous namespace
             auto t2 = std::chrono::high_resolution_clock::now();
             std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
             std::cout << "Histogram data for " << attributeToString(colorAttribute) << " loaded.\n";
+
+            rangeSlider->setLowValue(0);
+            rangeSlider->setHighValue(100);
         }
 
         void reloadHistogram(int timestep, int colorAttribute) {
@@ -331,7 +336,7 @@ namespace { //anonymous namespace
 
             auto foo = mainUI->sliderWidget;
             // Set Histogram Widget so Visualization Class knows about it!
-            visualisation->setHistogramWidgetPtr(mainUI->bottomPanel, mainUI->sliderWidget);
+            visualisation->setHistogramWidgetPtr(mainUI->bottomPanel, mainUI->sliderWidget, mainUI->rangeSlider);
             
             mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
             mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);
