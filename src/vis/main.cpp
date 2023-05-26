@@ -33,6 +33,7 @@
 #include <QComboBox>
 #include <QString>
 #include <QVBoxLayout>
+#include <qstring.h>
 
 #include "context.hpp"
 #include "visUtility.hpp"
@@ -56,6 +57,15 @@ namespace { //anonymous namespace
         checkFile(file);
         return std::string(std::istreambuf_iterator<char>{file}, {});
     }
+
+    struct Widgets {
+        HistogramWidget* histogram = nullptr;
+        HistogramSliderWidget* sliderWidget = nullptr;
+        QRangeSlider* rangeSlider = nullptr;
+        QLabel* minimumValLabel = nullptr;
+        QLabel* maximumValLabel = nullptr;
+        QLabel* timestepLabel = nullptr;
+    };
  
 
     class Visualisation : public QObject {
@@ -89,9 +99,10 @@ namespace { //anonymous namespace
         enum: int { edgesHidden = -1 };
         int edgeTimestep = edgesHidden;
 
-        HistogramWidget* histogramW = nullptr;
-        HistogramSliderWidget* sliderWidget = nullptr;
-        QRangeSlider* rangeSlider = nullptr;
+        Widgets widgets;
+
+        Visualisation(Widgets widgets) :
+            widgets(widgets) { }
 
         void loadData() {
             sphere->SetPhiResolution(10);
@@ -158,23 +169,23 @@ namespace { //anonymous namespace
             context.render();
         }
 
-        void setHistogramWidgetPtr(HistogramWidget* histogramWidget, HistogramSliderWidget* slider, QRangeSlider* rangeSlider) {
-            histogramW = histogramWidget;
-            sliderWidget = slider;
-            this->rangeSlider = rangeSlider;
-        }
-
     private:
 
         void reloadColors(int timestep, int colorAttribute) {
             currentColorAttribute = colorAttribute;
             currentTimestep = timestep;
 
+            widgets.timestepLabel->setText(QString::fromStdString(std::to_string(timestep)));
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
 
+            // todo: change to global data!!!
             auto summaryData = histogramDataLoader.getSummaryData(currentColorAttribute);
             double propMin = summaryData[timestep][3];
             double propMax = summaryData[timestep][2];
+
+            widgets.minimumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(propMin, propMax, pointFilter.lower_bound))));
+            widgets.maximumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(propMin, propMax, pointFilter.upper_bound))));
+
             auto colors = loadColors(timestep, colorAttribute, propMin, propMax, pointFilter);
 
             //auto colors = colorsFromPositions(*points);
@@ -220,24 +231,24 @@ namespace { //anonymous namespace
             auto histData = histogramDataLoader.getHistogramData(colorAttribute);
             auto summData = histogramDataLoader.getSummaryData(colorAttribute);
 
-            histogramW->setTableData(histData, summData);
-            sliderWidget->setTableData(histData, summData);
+            widgets.histogram->setTableData(histData, summData);
+            widgets.sliderWidget->setTableData(histData, summData);
 
             auto t2 = std::chrono::high_resolution_clock::now();
             std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
             std::cout << "Histogram data for " << attributeToString(colorAttribute) << " loaded.\n";
 
-            rangeSlider->setLowValue(0);
-            rangeSlider->setHighValue(100);
+            widgets.rangeSlider->setLowValue(0);
+            widgets.rangeSlider->setHighValue(100);
         }
 
         void reloadHistogram(int timestep, int colorAttribute) {
-            if (!histogramW->isLoaded()) {
+            if (!widgets.histogram->isLoaded()) {
                 std::cout << "histogramWidget in Visualization is not loaded!\n";
                 return;
             }
-            histogramW->setTick(timestep);
-            histogramW->update();
+            widgets.histogram->setTick(timestep);
+            widgets.histogram->update();
         }
 
     public slots:
@@ -270,17 +281,17 @@ namespace { //anonymous namespace
 
             if (lowerBoundary == minVal) upperBoundary = 500;
             if (upperBoundary == maxVal) lowerBoundary = maxVal - 500;
-            histogramW->setVisibleRange(lowerBoundary, upperBoundary);
+            widgets.histogram->setVisibleRange(lowerBoundary, upperBoundary);
 
             std::cout << "Slider value:" << std::to_string(sliderValue) << std::endl;
             changeTimestep(sliderValue);
         }
 
         void changeDrawMode(int modeType) {
-            histogramW->changeDrawMode((HistogramDrawMode)modeType);
-            sliderWidget->changeDrawMode((HistogramDrawMode)modeType);
+            widgets.histogram->changeDrawMode((HistogramDrawMode)modeType);
+            widgets.sliderWidget->changeDrawMode((HistogramDrawMode)modeType);
             reloadHistogram(currentTimestep, currentColorAttribute);
-            sliderWidget->update();
+            widgets.sliderWidget->update();
         }
 
         void changeColorAttribute(int colorAttribute) {
@@ -289,7 +300,7 @@ namespace { //anonymous namespace
             reloadColors(currentTimestep, colorAttribute);
             reloadHistogram(currentTimestep, colorAttribute);
             context.render();
-            sliderWidget->update();
+            widgets.sliderWidget->update();
         }
 
         void showEdges(int state) {
@@ -306,12 +317,12 @@ namespace { //anonymous namespace
         void logCheckboxChange(int state) {
             bool logEnabled = state == Qt::Checked;
 
-            histogramW->logarithmicScaleEnabled = logEnabled;
-            sliderWidget->logarithmicScaleEnabled = logEnabled;
-            histogramW->setDirty();
-            sliderWidget->setDirty();
-            sliderWidget->update();
-            histogramW->update();
+            widgets.histogram->logarithmicScaleEnabled = logEnabled;
+            widgets.sliderWidget->logarithmicScaleEnabled = logEnabled;
+            widgets.histogram->setDirty();
+            widgets.sliderWidget->setDirty();
+            widgets.sliderWidget->update();
+            widgets.histogram->update();
         }
     };
 
@@ -327,16 +338,13 @@ namespace { //anonymous namespace
             mainUI.init();
             mainUI->setupUi(mainWindow.ptr());
 
-            visualisation.init();
+            visualisation.init(Widgets{ mainUI->bottomPanel, mainUI->sliderWidget, mainUI->rangeSlider, 
+                mainUI->minValLabel, mainUI->maxValLabel, mainUI->timestepLabel });
             visualisation->loadData();
 
             visualisationWidget.init();
             visualisationWidget->setRenderWindow(visualisation->context.renderWindow);
             mainUI->mainVisDock->addWidget(visualisationWidget.ptr());
-
-            auto foo = mainUI->sliderWidget;
-            // Set Histogram Widget so Visualization Class knows about it!
-            visualisation->setHistogramWidgetPtr(mainUI->bottomPanel, mainUI->sliderWidget, mainUI->rangeSlider);
             
             mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
             mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);

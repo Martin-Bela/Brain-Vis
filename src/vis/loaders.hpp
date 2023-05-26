@@ -19,7 +19,7 @@ struct Range {
         double upper_bound;
 
         static Range Whole() {
-            return { std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max() };
+            return { 0, 1 };
         }
 
         bool inRange(double x) {
