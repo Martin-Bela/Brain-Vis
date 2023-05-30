@@ -157,6 +157,7 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
         paintMinMaxLabels(painter, Qt::black);
         break;
     }
+    fastRepaint = false;
 
     float tickSize =  (float) geometry().width() / (float) getVisibleTicks();
     int x = (tick - firstVisibleTick) * tickSize;
@@ -169,8 +170,10 @@ void HistogramWidget::mousePressEvent(QMouseEvent* e) {
         double pos = std::clamp(e->position().x(), 0.0, (double) geometry().width());
         setTick(round(pos / tickSize) + firstVisibleTick);
         histogramCursorMoved(tick);
+
+        fastRepaint = true;
+        update();
     }
-    update();
 }
 
 
@@ -184,8 +187,10 @@ void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
         double pos = std::clamp(e->position().x(), 0.0, (double)geometry().width());
         setTick(round(pos / tickSize) + firstVisibleTick);
         histogramCursorMoved(tick);
+
+        fastRepaint = true;
+        update();
     }
-    update();
 }
 
 void HistogramWidget::resizeEvent(QResizeEvent* e) {
@@ -196,12 +201,15 @@ void HistogramWidget::keyPressEvent(QKeyEvent* e) {
     if (e->key() == Qt::Key_Left || e->key() == Qt::Key_A)  {
         setTick(std::max(firstVisibleTick, tick - 1));
         histogramCursorMoved(tick);
+        fastRepaint = true;
+        update();
     }
     else if (e->key() == Qt::Key_Right || e->key() == Qt::Key_D) {
         setTick(std::min(lastVisibleTick, tick + 1));
         histogramCursorMoved(tick);
+        fastRepaint = true;
+        update();
     }
-    update();
 }
 
 

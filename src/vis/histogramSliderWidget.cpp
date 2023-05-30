@@ -31,6 +31,8 @@ void HistogramSliderWidget::paintEvent(QPaintEvent* event)
         break;
     }
 
+    fastRepaint = false;
+
     QColor black = { 0, 0, 0 };
     black.setAlphaF(0.3);
     QBrush brush = QBrush(black);
@@ -52,8 +54,10 @@ void HistogramSliderWidget::mousePressEvent(QMouseEvent* e)
         double pos = std::clamp(e->position().x(), 0.0, (double)geometry().width());
         setTick(round((pos / (double)geometry().width()) * getVisibleTicks()) + firstVisibleTick);
         histogramCursorMoved(tick);
+
+        fastRepaint = true;
+        update();
     }
-    update();
 }
 
 void HistogramSliderWidget::mouseMoveEvent(QMouseEvent* e)
@@ -62,8 +66,10 @@ void HistogramSliderWidget::mouseMoveEvent(QMouseEvent* e)
         double pos = std::clamp(e->position().x(), 0.0, (double)geometry().width());
         setTick(round((pos / (double)geometry().width()) * getVisibleTicks()) + firstVisibleTick);
         histogramCursorMoved(tick);
+
+        fastRepaint = true;
+        update();
     }
-    update();
 }
 
 void HistogramSliderWidget::paintHistogram(QPainter& painter)
