@@ -42,11 +42,6 @@ public:
     void setVisibleRange(int firstTick, int lastTick) {
         firstVisibleTick = firstTick;
         lastVisibleTick = lastTick;
-        dirty = true;
-    }
-
-    void setDirty() {
-        dirty = true;
     }
 
     void setTableData(std::span<std::vector<int>> histogramData, std::span<std::vector<double>> summaryData) {
@@ -54,7 +49,6 @@ public:
         this->summaryTable = summaryData;
 
         loaded = true;
-        dirty = true;
         recomputeMinMax();
         recomputeSummaryMinMax();
     }
@@ -66,7 +60,6 @@ public:
     void changeDrawMode(HistogramDrawMode drawModeParam) {
         std::cout << "DrawMode: " << drawMode <<" \n";
         drawMode = drawModeParam;
-        dirty = true;
     }
    
 
@@ -76,7 +69,7 @@ signals:
 
 protected:
     bool antialiased = true;
-    bool dirty = true;
+    bool fastRepaint = false;
     bool loaded = false;
     
     double max = 0; 

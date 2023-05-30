@@ -44,7 +44,6 @@ void HistogramSliderWidget::paintEvent(QPaintEvent* event)
 
     int x = getXPos(tick);
     painter.drawLine(x, 0, x, geometry().height());
-    dirty = false;
 }
 
 void HistogramSliderWidget::mousePressEvent(QMouseEvent* e)
@@ -72,7 +71,7 @@ void HistogramSliderWidget::paintHistogram(QPainter& painter)
     float binSize = (float)geometry().height() / (float) getBinCount();
 
     // TODO Use PixMap!
-    if (dirty) {
+    if (!fastRepaint) {
         std::cout << getBinCount() << std::endl;
         for (int x = firstVisibleTick; x <= lastVisibleTick - dataBinSize; x += dataBinSize) {
             paintHistogramTick(painter, x, binSize, tickSize);
@@ -126,7 +125,7 @@ void HistogramSliderWidget::paintSummary(QPainter& painter, bool redraw)
     blue.setWidth(2);
     red.setWidth(2);
     // TODO Use PixMap?
-    if (dirty) {
+    if (!fastRepaint) {
         if (redraw) {
             painter.fillRect(0, 0, geometry().width(), geometry().height(), QBrush({ 255, 255, 255 }));
         }

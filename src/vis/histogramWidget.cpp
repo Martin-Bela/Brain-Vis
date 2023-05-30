@@ -52,7 +52,7 @@ void HistogramWidget::paintSummary(QPainter& painter, bool redraw) {
     blue.setWidth(2);
     red.setWidth(2);
     // TODO Use PixMap?
-    if (dirty) {
+    if (!fastRepaint) {
         if (redraw) {
             painter.fillRect(0, 0, geometry().width(), geometry().height(), QBrush({ 255, 255, 255 }));
         }
@@ -100,7 +100,7 @@ void HistogramWidget::paintHistogram(QPainter& painter) {
     std::cout << "BinSize:" << binSize << ", TimestepSize: " << tickSize << "\n";
     
     // TODO Use PixMap!
-    if (dirty) {
+    if (!fastRepaint) {
         for (int x = firstVisibleTick; x <= lastVisibleTick; x++) {
             paintHistogramTick(painter, x, binSize, tickSize);
         }
@@ -157,7 +157,6 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
         paintMinMaxLabels(painter, Qt::black);
         break;
     }
-    dirty = false;
 
     float tickSize =  (float) geometry().width() / (float) getVisibleTicks();
     int x = (tick - firstVisibleTick) * tickSize;
@@ -190,7 +189,6 @@ void HistogramWidget::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void HistogramWidget::resizeEvent(QResizeEvent* e) {
-    dirty = true;
     update();
 }
 

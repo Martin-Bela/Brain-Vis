@@ -319,8 +319,6 @@ namespace { //anonymous namespace
 
             widgets.histogram->logarithmicScaleEnabled = logEnabled;
             widgets.sliderWidget->logarithmicScaleEnabled = logEnabled;
-            widgets.histogram->setDirty();
-            widgets.sliderWidget->setDirty();
             widgets.sliderWidget->update();
             widgets.histogram->update();
         }
