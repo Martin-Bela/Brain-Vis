@@ -139,19 +139,17 @@ namespace { //anonymous namespace
             pointGaussianMapper->SetScaleFactor(0.9);
             pointGaussianMapper->EmissiveOff();
 
-            std::ifstream shaderFile("src/vis/shaders/bilboard.frag");
             if (false) {
+                std::ifstream shaderFile("src/vis/shaders/bilboard.frag");
+                cout << "Loading fog shader!\n";
+
                 std::string shaderCode = readWholeFile(shaderFile);
                 pointGaussianMapper->SetSplatShaderCode(shaderCode.c_str());
             } else {
-		        cout << "Couldnt load shader, fallback to default shader";
                 pointGaussianMapper->SetSplatShaderCode(
                     #include "vis/shaders/_bilboard_fallback.frag"
                 );
-                //exit(1);
 	        };
-            
-            
             
             actor->SetMapper(pointGaussianMapper);
             //actor->GetProperty()->SetOpacity(0.5);
@@ -175,8 +173,8 @@ namespace { //anonymous namespace
             currentColorAttribute = colorAttribute;
             currentTimestep = timestep;
 
-            widgets.timestepLabel->setText(QString::fromStdString(std::to_string(timestep)));
-            std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep, colorAttribute);
+            widgets.timestepLabel->setText(QString::fromStdString(std::to_string(timestep * 100)));
+            std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep * 100, colorAttribute);
 
             // todo: change to global data!!!
             auto summaryData = histogramDataLoader.getSummaryData(currentColorAttribute);
