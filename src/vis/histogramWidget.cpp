@@ -142,19 +142,19 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
     case Summary:
         paintSummary(painter, true);
         painter.setPen(QPen({ 0, 255, 0 }));
-        paintMinMaxLabels(painter, Qt::black);
+        //paintMinMaxLabels(painter, Qt::black);
         break;
     case Histogram:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
-        paintMinMaxLabels(painter, Qt::black);
+        //paintMinMaxLabels(painter, Qt::black);
         break;
     case Both:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
         paintSummary(painter, false);
         painter.setPen(QPen({ 0, 255, 0 }));
-        paintMinMaxLabels(painter, Qt::black);
+        //paintMinMaxLabels(painter, Qt::black);
         break;
     }
     fastRepaint = false;
@@ -216,6 +216,7 @@ void HistogramWidget::keyPressEvent(QKeyEvent* e) {
 void HistogramWidget::setTick(int newTick) {
     previousTicks.emplace_back(tick);
     tick = newTick;
+    update();
 }
 
 void HistogramWidget::recomputeSummaryMinMax() {

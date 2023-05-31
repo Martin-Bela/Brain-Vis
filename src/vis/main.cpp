@@ -246,7 +246,7 @@ namespace { //anonymous namespace
                 return;
             }
             widgets.histogram->setTick(timestep);
-            widgets.histogram->update();
+            widgets.histogram->repaint();
         }
 
     public slots:
@@ -257,8 +257,8 @@ namespace { //anonymous namespace
         }
 
         void changeTimestep(int timestep) {
-            reloadHistogram(currentTimestep, currentColorAttribute);
             reloadColors(timestep, currentColorAttribute);
+            reloadHistogram(currentTimestep, currentColorAttribute);
             reloadEdges();
             context.render();
         }
