@@ -44,6 +44,14 @@ public:
         lastVisibleTick = lastTick;
     }
 
+    double getMinVal() {
+        return sMin;
+    }
+
+    double getMaxVal() {
+        return sMax;
+    }
+
     void setTableData(std::span<std::vector<int>> histogramData, std::span<std::vector<double>> summaryData) {
         this->histogramTable = histogramData;
         this->summaryTable = summaryData;

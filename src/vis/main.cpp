@@ -178,8 +178,8 @@ namespace { //anonymous namespace
 
             // todo: change to global data!!!
             auto summaryData = histogramDataLoader.getSummaryData(currentColorAttribute);
-            double propMin = summaryData[timestep][3];
-            double propMax = summaryData[timestep][2];
+            double propMin = widgets.sliderWidget->getMinVal();
+            double propMax = widgets.sliderWidget->getMaxVal();
 
             widgets.minimumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(propMin, propMax, pointFilter.lower_bound))));
             widgets.maximumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(propMin, propMax, pointFilter.upper_bound))));
@@ -257,8 +257,8 @@ namespace { //anonymous namespace
         }
 
         void changeTimestep(int timestep) {
-            reloadColors(timestep, currentColorAttribute);
             reloadHistogram(currentTimestep, currentColorAttribute);
+            reloadColors(timestep, currentColorAttribute);
             reloadEdges();
             context.render();
         }
