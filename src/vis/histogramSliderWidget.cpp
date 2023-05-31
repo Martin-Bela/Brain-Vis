@@ -84,6 +84,7 @@ void HistogramSliderWidget::paintHistogram(QPainter& painter)
         }
     }
     else {
+        previousTicks.push_back(tick);
         for (int previous : previousTicks) {
             int lowerBoundary = std::max(previous - 250, firstVisibleTick);
             int upperBoundary = std::min(previous + 250, lastVisibleTick);
