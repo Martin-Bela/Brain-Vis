@@ -71,7 +71,6 @@ namespace { //anonymous namespace
     class Visualisation : public QObject {
     public:
         Context context;
-        vtkNew<vtkSphereSource> sphere;
         vtkNew<vtkPoints> points;
         vtkNew<vtkPoints> aggregatedPoints;
         vtkNew<vtkPolyData> polyData;
@@ -105,9 +104,6 @@ namespace { //anonymous namespace
             widgets(widgets) { }
 
         void loadData() {
-            sphere->SetPhiResolution(10);
-            sphere->SetThetaResolution(10);
-            sphere->SetRadius(0.08);
 
             loadPositions(*points, *aggregatedPoints, point_map, true);
 
@@ -136,8 +132,9 @@ namespace { //anonymous namespace
 
             pointGaussianMapper->SetInputData(polyData);
             //pointGaussianMapper->SetScalarRange(range);
-            pointGaussianMapper->SetScaleFactor(0.9);
+            //pointGaussianMapper->SetScaleFactor(0.9);
             pointGaussianMapper->EmissiveOff();
+            pointGaussianMapper->SetColorModeToDirectScalars();
 
             if (false) {
                 std::ifstream shaderFile("src/vis/shaders/bilboard.frag");

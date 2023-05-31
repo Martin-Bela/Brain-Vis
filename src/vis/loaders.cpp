@@ -299,7 +299,6 @@ vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double
     }
 
     vtkNew<vtkUnsignedCharArray> colors;
-    colors->SetName("colors");
     colors->SetNumberOfComponents(4);
     
     ColorMixer colorMixer(QColor::fromRgbF(0, 0, 1), QColor::fromRgbF(0.7, 0.7, 0.7), QColor::fromRgbF(1, 0, 0), 0.5);
@@ -383,7 +382,7 @@ void HistogramDataLoader::ensureLoaded(int colorAttribute) {
         dataState[colorAttribute].notify_all();
     }
     else {
-        dataState[colorAttribute].wait(Loaded);
+        dataState[colorAttribute].wait(Loading);
     }
 }
 
