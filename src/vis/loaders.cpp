@@ -322,80 +322,7 @@ vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double
     return colors;
 }
 
-vtkNew<vtkUnsignedCharArray> loadAggregatedColors(int timestepCount, int pointCount) {
-    std::vector<float> values(pointCount);
 
-    auto projection = [](NeuronProperties& prop) {
-        return (float)prop.fired;
-    };
-    
-    for (int j = 0; j < timestepCount; j++) {
-        auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(j);
-        BinaryReader<NeuronProperties> reader(path);
-
-        if (reader.count() < pointCount) {
-            std::cout << "File:\"" << path << "\" is too small.\n";
-            std::cout << sizeof(NeuronProperties) * pointCount << "bytes expected.\n";
-        }
-
-        for (int i = 0; i < pointCount; i++) {
-            NeuronProperties neuron = reader.read();
-            values[i] += projection(neuron);
-        }
-    }
-
-    vtkNew<vtkUnsignedCharArray> colors;
-    colors->SetName("colors");
-    colors->SetNumberOfComponents(3);
-
-    float mini = INFINITY, maxi = -INFINITY;
-    for (int i = 0; i < pointCount; i++) {
-        values[i] /= pointCount;
-        mini = std::min(values[i], mini);
-        maxi = std::max(values[i], maxi);
-    }
-
-    for (int i = 0; i < pointCount; i++) {
-        std::array<unsigned char, 3> color = { 255, 255, 255 };
-
-        auto val = (values[i] - mini) / (maxi - mini);
-        val = val * 2 - 1;
-
-        if (val > 0) {
-            color[1] = 255 - 255 * val;
-            color[2] = color[1];
-        }
-        else {
-            color[1] = 255 - 255 * val;
-            color[0] = color[1];
-        }
-
-        colors->InsertNextTypedTuple(color.data());
-    }
-
-    return colors;
-}
-
-vtkNew<vtkUnsignedCharArray> colorsFromPositions(vtkPoints& points) {
-    vtkNew<vtkUnsignedCharArray> colors;
-    colors->SetName("colors");
-    colors->SetNumberOfComponents(3);
-
-    std::array<double, 3> prev_point{};
-    auto color = generateNiceColor();
-
-    for (int i = 0; i < points.GetNumberOfPoints(); i++) {
-        if (manhattanDist(points.GetPoint(i), prev_point.data()) > 0.5) {
-            auto point = points.GetPoint(i);
-            prev_point = { point[0], point[1], point[2] };
-            color = generateNiceColor();
-        }
-
-        colors->InsertNextTypedTuple(color.data());
-    }
-
-    return colors;
-}
 
 std::string attributeToString(int attribute) {
     switch (attribute) {
@@ -458,15 +385,17 @@ void HistogramDataLoader::ensureLoaded(int colorAttribute) {
     else {
         dataState[colorAttribute].wait(Loaded);
     }
-    }
+}
 
 std::span<std::vector<double>> HistogramDataLoader::getSummaryData(int colorAttribute) {
     ensureLoaded(colorAttribute);
+    assert(summaryData[colorAttribute].size() > 0);
     return summaryData[colorAttribute];
 }
 
 std::span<std::vector<int>> HistogramDataLoader::getHistogramData(int colorAttribute) {
     ensureLoaded(colorAttribute);
+    assert(histogramData[colorAttribute].size() > 0);
     return histogramData[colorAttribute];
 }
 
