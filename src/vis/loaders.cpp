@@ -114,7 +114,7 @@ std::vector<Point3> findClosestPoints(int index, std::vector<Point3>& points) {
 }
 
 
-void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping, bool alternatePositions) {
+void loadPositions(vtkPoints& originalPositions, vtkPoints& scatteredPositions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping) {
     vtkNew<vtkDelimitedTextReader> reader;
     std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
     reader->SetFileName(path.data());
@@ -179,15 +179,14 @@ void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::ve
     aggregatedPositions.InsertNextPoint(avgPoint);
 
     // This is the original code
-    if (!alternatePositions) {
-        for (std::vector<Point3> cluster : clusters) {
-            for (Point3 cPoint : cluster) {
-                double mPoint[] = { cPoint.x, cPoint.y, cPoint.z };
-                positions.InsertNextPoint(mPoint);
-            }
+
+    for (std::vector<Point3> cluster : clusters) {
+        for (Point3 cPoint : cluster) {
+            double mPoint[] = { cPoint.x, cPoint.y, cPoint.z };
+            originalPositions.InsertNextPoint(mPoint);
         }
-        return;
     }
+
     
 
 
@@ -266,7 +265,7 @@ void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::ve
             double s = random_s[pattern][j];
             double t = random_t[pattern][j];
             double mPoint[] = { averagePoints[i].x + scale * (s * pa.x + t * pb.x), averagePoints[i].y + scale * (s * pa.y + t * pb.y), averagePoints[i].z + scale * (s * pa.z + t * pb.z) };
-            positions.InsertNextPoint(mPoint);
+            scatteredPositions.InsertNextPoint(mPoint);
         }
     }
 }

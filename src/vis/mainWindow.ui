@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>918</width>
+    <width>765</width>
     <height>745</height>
    </rect>
   </property>
@@ -72,6 +72,13 @@
          </property>
          <property name="checked">
           <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="scatterPointsCheckBox">
+         <property name="text">
+          <string>Scatter Points</string>
          </property>
         </widget>
        </item>

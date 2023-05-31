@@ -71,7 +71,9 @@ namespace { //anonymous namespace
     class Visualisation : public QObject {
     public:
         Context context;
-        vtkNew<vtkPoints> points;
+        vtkNew<vtkPoints> originalPositions;
+        vtkNew<vtkPoints> scatteredPositions;
+
         vtkNew<vtkPoints> aggregatedPoints;
         vtkNew<vtkPolyData> polyData;
         vtkNew<vtkPointGaussianMapper> pointGaussianMapper;
@@ -105,7 +107,7 @@ namespace { //anonymous namespace
 
         void loadData() {
 
-            loadPositions(*points, *aggregatedPoints, point_map, true);
+            loadPositions(*originalPositions, *scatteredPositions, *aggregatedPoints, point_map);
 
             // Convert the graph to a polydata
             graphToPolyData->EdgeGlyphOutputOn();
@@ -126,7 +128,7 @@ namespace { //anonymous namespace
             arrowActor->GetProperty()->SetColor(namedColors->GetColor3d("DarkGray").GetData());
 
             // Points
-            polyData->SetPoints(points);
+            polyData->SetPoints(originalPositions);
 
             //double* range = polyData->GetPointData()->GetScalars()->GetRange();
 
@@ -247,6 +249,17 @@ namespace { //anonymous namespace
         }
 
     public slots:
+        void setPointScattering(int state) {
+            bool scatter = state == Qt::Checked;
+            if (scatter) {
+                polyData->SetPoints(scatteredPositions);
+            }
+            else {
+                polyData->SetPoints(originalPositions);
+            }
+            context.render();
+        }
+
         void setPointFilter(unsigned low, unsigned hight) {
             pointFilter = Range{ low / 100.0, hight / 100.0 };
             reloadColors(currentTimestep, currentColorAttribute);
@@ -364,6 +377,7 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->logScaleCheckbox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::logCheckboxChange);
             QObject::connect(mainUI->rangeSlider, &QRangeSlider::valueChange, visualisation.ptr(), &Visualisation::setPointFilter);
             QObject::connect(mainUI->pointSizeSlider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changePointSize);
+            QObject::connect(mainUI->scatterPointsCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::setPointScattering);
         }
 
         int run() {
