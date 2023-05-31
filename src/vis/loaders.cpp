@@ -114,7 +114,7 @@ std::vector<Point3> findClosestPoints(int index, std::vector<Point3>& points) {
 }
 
 
-void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping) {
+void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping, bool alternatePositions) {
     vtkNew<vtkDelimitedTextReader> reader;
     std::string path = (dataFolder / "positions/rank_0_positions.txt").string();
     reader->SetFileName(path.data());
@@ -179,27 +179,16 @@ void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::ve
     aggregatedPositions.InsertNextPoint(avgPoint);
 
     // This is the original code
-    /*
-    for (std::vector<Point3> cluster : clusters) {
-        Point3 avgPoint = Point3(0.0, 0.0, 0.0);
-        for (Point3 &cPoint : cluster) {
-            avgPoint.add(cPoint);
+    if (!alternatePositions) {
+        for (std::vector<Point3> cluster : clusters) {
+            for (Point3 cPoint : cluster) {
+                double mPoint[] = { cPoint.x, cPoint.y, cPoint.z };
+                positions.InsertNextPoint(mPoint);
+            }
         }
-
-        avgPoint.scale(-1.0 / (double) cluster.size());       
-        const int scale = 25;    
-        for (Point3 cPoint : cluster) {
-            Point3 moveVector = Point3(cPoint.x, cPoint.y, cPoint.z);
-            moveVector.add(avgPoint);
-            moveVector.scale(scale);
-
-            cPoint.add(moveVector);
-            double mPoint[] = { cPoint.x, cPoint.y, cPoint.z };
-            positions.InsertNextPoint(mPoint);
-        }
-        
+        return;
     }
-    */
+    
 
 
     // This generates random poisson disk patterns (equally spaced points)

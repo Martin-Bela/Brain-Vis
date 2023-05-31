@@ -28,7 +28,7 @@ struct Range {
     };
 
 
-void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping);
+void loadPositions(vtkPoints& positions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping, bool alternativeMapping);
 
 vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double mini, double maxi, Range pointFilter);
 

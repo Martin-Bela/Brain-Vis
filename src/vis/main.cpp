@@ -109,7 +109,7 @@ namespace { //anonymous namespace
             sphere->SetThetaResolution(10);
             sphere->SetRadius(0.08);
 
-            loadPositions(*points, *aggregatedPoints, point_map);
+            loadPositions(*points, *aggregatedPoints, point_map, true);
 
             // Convert the graph to a polydata
             graphToPolyData->EdgeGlyphOutputOn();
