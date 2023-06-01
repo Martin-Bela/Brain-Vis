@@ -50,8 +50,8 @@ def get_timestep_hist(dir_path, timestep, attributes):
     for i in attributes:
         np_property = np.array(properties[i])
 
-        #range = (NEURON_PROPERTIES[i].min, NEURON_PROPERTIES[i].max)
-        hist = np.histogram(np_property, bins = NEURON_PROPERTIES[i].bins_count)
+        range = (NEURON_PROPERTIES[i].min, NEURON_PROPERTIES[i].max)
+        hist = np.histogram(np_property, bins = NEURON_PROPERTIES[i].bins_count, range=range)
 
         histograms.append(hist)
     
