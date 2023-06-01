@@ -287,6 +287,31 @@ void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timest
     }
 }
 
+std::pair<float, float> diffMinMax(int timestep, int colorAttribute) {
+    int pointCount = 50000;
+
+    if (timestep == 0) {
+        timestep = 1;
+    }
+
+    auto previousTimestepPath = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep - 1);
+    BinaryReader<NeuronProperties> previousReader(previousTimestepPath);
+
+    auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
+    BinaryReader<NeuronProperties> reader(path);
+
+    float min = INFINITY, max = -INFINITY;
+    for (int i = 0; i < pointCount; i++) {
+        NeuronProperties properties = reader.read();
+        NeuronProperties prevProperties = previousReader.read();
+
+        auto diff = properties.projection(colorAttribute) - prevProperties.projection(colorAttribute);
+        min = std::min(min, diff);
+        max = std::max(max, diff);
+    }
+    return { min, max };
+}
+
 vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double mini, double maxi, Range pointFilter, bool derivatives) {
     if (derivatives && timestep == 0) {
         timestep = 1;
@@ -313,6 +338,7 @@ vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double
             //if (i == 0 || map[i] == map[i - 1]) continue;
 
             auto val = (neuron.projection(colorAttribute) - mini) / (maxi - mini);
+            val = std::clamp(val, 0.0, 1.0);
             QColor color = colorMixer.getColor(val);
 
             unsigned char alpha = pointFilter.inRange(val) ? 255 : 0;
@@ -331,8 +357,8 @@ vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double
             NeuronProperties prevProperties = previousReader.read();
 
             auto difference = properties.projection(colorAttribute) - prevProperties.projection(colorAttribute);
-            auto max_diff = maxi - mini;
-            auto val = difference / max_diff / 2 + 0.5;
+            auto val = (difference - mini) / (maxi - mini);
+
             QColor color = colorMixer.getColor(val);
 
             unsigned char alpha = pointFilter.inRange(val) ? 255 : 0;

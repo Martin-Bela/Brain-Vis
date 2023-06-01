@@ -27,6 +27,7 @@ struct Range {
         }
     };
 
+std::pair<float, float> diffMinMax(int timestep, int colorAttribute);
 
 void loadPositions(vtkPoints& originalPositions, vtkPoints& scatteredPositions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping);
 
