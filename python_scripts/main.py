@@ -14,7 +14,7 @@ def main():
     parser.add_argument('dir_name',
                         help="Directory in which we parse all things",
                         nargs='?',  # Sets to Optional 
-                        default="../data/viz-calcium/")
+                        default="./data/viz-calcium/")
     parser.add_argument('-c', '--clustering',
                         action='store_true',
                         help="Perform Agglomerative Clustering of network"

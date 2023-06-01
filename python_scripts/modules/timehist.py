@@ -6,21 +6,29 @@ from pathlib import Path
 
 from neuron_properties import *
 
-STEPS = 500
 
+
+NEURONS_COUNT = 50000
+MAX_STEPS = 50000
+
+STEPS = MAX_STEPS
+
+# ATTRIBUTES = [
+#     FIRED,
+#     FIRED_FRACTION,
+#     ELECTRIC_ACTIVITY, 
+#     SECONDARY_VARIABLE,
+#     CALCIUM,
+#     TARGET_CALCIUM,
+#     SYNAPTIC_INPUT,
+#     BACKGROUND_ACTIVITY,
+#     GROWN_AXONS,
+#     CONNECTED_AXONS,
+#     GROWN_DENDRITES,
+#     CONNECTED_DENDRITES,
+# ]
 ATTRIBUTES = [
-    FIRED,
-    FIRED_FRACTION,
-    ELECTRIC_ACTIVITY, 
-    SECONDARY_VARIABLE,
-    CALCIUM,
-    TARGET_CALCIUM,
-    SYNAPTIC_INPUT,
-    BACKGROUND_ACTIVITY,
-    GROWN_AXONS,
-    CONNECTED_AXONS,
-    GROWN_DENDRITES,
-    CONNECTED_DENDRITES,
+     FIRED,
 ]
 
 
@@ -42,8 +50,8 @@ def get_timestep_hist(dir_path, timestep, attributes):
     for i in attributes:
         np_property = np.array(properties[i])
 
-        range = (NEURON_PROPERTIES[i].min, NEURON_PROPERTIES[i].max)
-        hist = np.histogram(np_property, bins = NEURON_PROPERTIES[i].bins_count, range = range)
+        #range = (NEURON_PROPERTIES[i].min, NEURON_PROPERTIES[i].max)
+        hist = np.histogram(np_property, bins = NEURON_PROPERTIES[i].bins_count)
 
         histograms.append(hist)
     
@@ -70,21 +78,18 @@ def run_timehist(dir_path):
         attribute_histogram = histograms[i]
         neuron_property = NEURON_PROPERTIES[ATTRIBUTES[i]]
         histogram, values = tuple(map(list, (zip(*attribute_histogram))))
+
         stacked= np.stack(histogram)
 
-        max_val = np.amax(stacked)
-        #print(max_val)
+        # Solve by this very bad code
+        #if i == FIRED:
+        #    print(stacked,)
 
-        Path(f"{dir_path}monitors-hist-real").mkdir(parents=True, exist_ok=True)
-        np.savetxt(f"{dir_path}monitors-hist-real/{neuron_property.filename}.txt",   stacked, delimiter=" ", fmt='%i')
+        Path(f"{dir_path}monitors-hist-real2").mkdir(parents=True, exist_ok=True)
+        np.savetxt(f"{dir_path}monitors-hist-real2/{neuron_property.filename}.txt",   stacked, delimiter=" ", fmt='%i')
 
         stacked = np.rot90(stacked)
-        #print(stacked)
         plt.imshow(stacked, cmap='hot')
         plt.title(neuron_property.name)
-        #plt.ylim(neuron_property.min, neuron_property.max)
-        
-        #plt.savefig(f"../figs/{neuron_property.filename}_z_hist")
-        #plt.show()
 
     #print(np.stack(histograms))
