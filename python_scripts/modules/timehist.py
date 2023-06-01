@@ -9,7 +9,7 @@ from neuron_properties import *
 
 
 NEURONS_COUNT = 50000
-MAX_STEPS = 50000
+MAX_STEPS = 10000
 
 STEPS = MAX_STEPS
 
