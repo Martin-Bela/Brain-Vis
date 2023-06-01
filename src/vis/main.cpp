@@ -177,7 +177,6 @@ namespace { //anonymous namespace
             widgets.timestepLabel->setText(QString::fromStdString(std::to_string(timestep * 100)));
             std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep * 100, colorAttribute);
 
-            // todo: change to global data!!!
             auto summaryData = histogramDataLoader.getSummaryData(currentColorAttribute);
             double propMin = widgets.sliderWidget->getMinVal();
             double propMax = widgets.sliderWidget->getMaxVal();
@@ -186,15 +185,13 @@ namespace { //anonymous namespace
             double labelMax = propMax;
 
             if (derivatives) {
-                auto diff = propMax - propMin;
-                labelMin = diff;
-                labelMax = -diff;
+                std::tie(labelMin, labelMax) = diffMinMax(timestep, colorAttribute);
             }
 
             widgets.minimumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(labelMin, labelMax, pointFilter.lower_bound))));
             widgets.maximumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(labelMin, labelMax, pointFilter.upper_bound))));
             
-            auto colors = loadColors(timestep, colorAttribute, propMin, propMax, pointFilter, derivatives);
+            auto colors = loadColors(timestep, colorAttribute, labelMin, labelMax, pointFilter, derivatives);
 
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
