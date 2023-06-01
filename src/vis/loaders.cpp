@@ -287,7 +287,11 @@ void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timest
     }
 }
 
-vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double mini, double maxi, Range pointFilter) {
+vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double mini, double maxi, Range pointFilter, bool derivatives) {
+    if (derivatives && timestep == 0) {
+        timestep = 1;
+    }
+
     const int pointCount = 50000;
     auto path = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep);
     
@@ -302,19 +306,41 @@ vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double
     
     ColorMixer colorMixer(QColor::fromRgbF(0, 0, 1), QColor::fromRgbF(0.7, 0.7, 0.7), QColor::fromRgbF(1, 0, 0), 0.5);
 
-    for (int i = 0; i < pointCount; i++) {
-        NeuronProperties neuron = reader.read();
+    if (!derivatives) {
+        for (int i = 0; i < pointCount; i++) {
+            NeuronProperties neuron = reader.read();
 
-        //if (i == 0 || map[i] == map[i - 1]) continue;
+            //if (i == 0 || map[i] == map[i - 1]) continue;
 
-        auto val = (neuron.projection(colorAttribute) - mini) / (maxi - mini);
-        QColor color = colorMixer.getColor(val);
+            auto val = (neuron.projection(colorAttribute) - mini) / (maxi - mini);
+            QColor color = colorMixer.getColor(val);
 
-        unsigned char alpha = pointFilter.inRange(val) ? 255 : 0;
+            unsigned char alpha = pointFilter.inRange(val) ? 255 : 0;
 
-        std::array<unsigned char, 4> colorBytes = { (unsigned char)color.red(), (unsigned char)color.green(), (unsigned char)color.blue(), alpha };
+            std::array<unsigned char, 4> colorBytes = { (unsigned char)color.red(), (unsigned char)color.green(), (unsigned char)color.blue(), alpha };
 
-        colors->InsertNextTypedTuple(colorBytes.data());
+            colors->InsertNextTypedTuple(colorBytes.data());
+        }
+    }
+    else {
+        auto previousTimestepPath = (dataFolder / "monitors-bin/timestep").string() + std::to_string(timestep - 1);
+        BinaryReader<NeuronProperties> previousReader(previousTimestepPath);
+
+        for (int i = 0; i < pointCount; i++) {
+            NeuronProperties properties = reader.read();
+            NeuronProperties prevProperties = previousReader.read();
+
+            auto difference = properties.projection(colorAttribute) - prevProperties.projection(colorAttribute);
+            auto max_diff = maxi - mini;
+            auto val = difference / max_diff / 2 + 0.5;
+            QColor color = colorMixer.getColor(val);
+
+            unsigned char alpha = pointFilter.inRange(val) ? 255 : 0;
+
+            std::array<unsigned char, 4> colorBytes = { (unsigned char)color.red(), (unsigned char)color.green(), (unsigned char)color.blue(), alpha };
+
+            colors->InsertNextTypedTuple(colorBytes.data());
+        }
     }
 
     return colors;

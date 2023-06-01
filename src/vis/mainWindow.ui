@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Visualisation of the Human Brain Simulation</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
@@ -79,6 +79,13 @@
         <widget class="QCheckBox" name="scatterPointsCheckBox">
          <property name="text">
           <string>Scatter Points</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="showDerivativesCheckBox">
+         <property name="text">
+          <string>Attribute Derivatives</string>
          </property>
         </widget>
        </item>

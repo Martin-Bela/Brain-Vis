@@ -30,7 +30,7 @@ struct Range {
 
 void loadPositions(vtkPoints& originalPositions, vtkPoints& scatteredPositions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping);
 
-vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double mini, double maxi, Range pointFilter);
+vtkNew<vtkUnsignedCharArray> loadColors(int timestep, int colorAttribute, double mini, double maxi, Range pointFilter, bool derivatives);
 
 void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timestep);
 

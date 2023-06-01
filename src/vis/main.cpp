@@ -93,6 +93,8 @@ namespace { //anonymous namespace
 
         int currentTimestep = 0;
         int currentColorAttribute = 0;
+        bool derivatives = false;
+
         bool edgesVisible = false;
 
         HistogramDataLoader histogramDataLoader;
@@ -161,14 +163,14 @@ namespace { //anonymous namespace
         void firstRender() {
             // loadTableData();
             loadHistogramData(0);
-            reloadColors(0, 0);
+            reloadColors(0, 0, false);
             reloadEdges();
             context.render();
         }
 
     private:
 
-        void reloadColors(int timestep, int colorAttribute) {
+        void reloadColors(int timestep, int colorAttribute, bool derivatives) {
             currentColorAttribute = colorAttribute;
             currentTimestep = timestep;
 
@@ -180,10 +182,19 @@ namespace { //anonymous namespace
             double propMin = widgets.sliderWidget->getMinVal();
             double propMax = widgets.sliderWidget->getMaxVal();
 
-            widgets.minimumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(propMin, propMax, pointFilter.lower_bound))));
-            widgets.maximumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(propMin, propMax, pointFilter.upper_bound))));
+            double labelMin = propMin;
+            double labelMax = propMax;
 
-            auto colors = loadColors(timestep, colorAttribute, propMin, propMax, pointFilter);
+            if (derivatives) {
+                auto diff = propMax - propMin;
+                labelMin = diff;
+                labelMax = -diff;
+            }
+
+            widgets.minimumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(labelMin, labelMax, pointFilter.lower_bound))));
+            widgets.maximumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(labelMin, labelMax, pointFilter.upper_bound))));
+            
+            auto colors = loadColors(timestep, colorAttribute, propMin, propMax, pointFilter, derivatives);
 
             //auto colors = colorsFromPositions(*points);
             polyData->GetPointData()->SetScalars(colors);
@@ -260,14 +271,20 @@ namespace { //anonymous namespace
             context.render();
         }
 
+        void showDerivatives(int state) {
+            derivatives = state == Qt::Checked;
+            reloadColors(currentTimestep, currentColorAttribute, derivatives);
+            context.render();
+        }
+
         void setPointFilter(unsigned low, unsigned hight) {
             pointFilter = Range{ low / 100.0, hight / 100.0 };
-            reloadColors(currentTimestep, currentColorAttribute);
+            reloadColors(currentTimestep, currentColorAttribute, derivatives);
             context.render();
         }
 
         void changeTimestep(int timestep) {
-            reloadColors(timestep, currentColorAttribute);
+            reloadColors(timestep, currentColorAttribute, derivatives);
             reloadHistogram(currentTimestep, currentColorAttribute);
             reloadEdges();
             context.render();
@@ -305,7 +322,7 @@ namespace { //anonymous namespace
         void changeColorAttribute(int colorAttribute) {
             pointFilter = Range::Whole();
             loadHistogramData(colorAttribute);
-            reloadColors(currentTimestep, colorAttribute);
+            reloadColors(currentTimestep, colorAttribute, derivatives);
             reloadHistogram(currentTimestep, colorAttribute);
             context.render();
             widgets.sliderWidget->update();
@@ -378,6 +395,7 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->rangeSlider, &QRangeSlider::valueChange, visualisation.ptr(), &Visualisation::setPointFilter);
             QObject::connect(mainUI->pointSizeSlider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changePointSize);
             QObject::connect(mainUI->scatterPointsCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::setPointScattering);
+            QObject::connect(mainUI->showDerivativesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showDerivatives);
         }
 
         int run() {
