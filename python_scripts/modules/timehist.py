@@ -85,8 +85,8 @@ def run_timehist(dir_path):
         #if i == FIRED:
         #    print(stacked,)
 
-        Path(f"{dir_path}monitors-hist-real2").mkdir(parents=True, exist_ok=True)
-        np.savetxt(f"{dir_path}monitors-hist-real2/{neuron_property.filename}.txt",   stacked, delimiter=" ", fmt='%i')
+        Path(f"{dir_path}monitors-hist-real").mkdir(parents=True, exist_ok=True)
+        np.savetxt(f"{dir_path}monitors-hist-real/{neuron_property.filename}.txt",   stacked, delimiter=" ", fmt='%i')
 
         stacked = np.rot90(stacked)
         plt.imshow(stacked, cmap='hot')
