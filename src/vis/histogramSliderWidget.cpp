@@ -175,12 +175,12 @@ void HistogramSliderWidget::paintSummaryTick(QPainter& painter, int tick, float 
         if (tick + b + dataBinSize >= summaryTable.size()) {
             break;
         }
-        max1 += summaryTable[tick + b][2];
-        min1 += summaryTable[tick + b][3];
-        val1 += summaryTable[tick + b][0];
-        max2 += summaryTable[tick + b + dataBinSize][2];
-        min2 += summaryTable[tick + b + dataBinSize][3];
-        val2 += summaryTable[tick + b + dataBinSize][0];
+        max1 += summaryTable[tick + b].max;
+        min1 += summaryTable[tick + b].min;
+        val1 += summaryTable[tick + b].mean;
+        max2 += summaryTable[tick + b + dataBinSize].max;
+        min2 += summaryTable[tick + b + dataBinSize].min;
+        val2 += summaryTable[tick + b + dataBinSize].mean;
         n++;
     }
     max1 /= n;

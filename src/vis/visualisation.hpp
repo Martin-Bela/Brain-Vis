@@ -30,6 +30,8 @@ struct Widgets {
     QLabel* minimumValLabel = nullptr;
     QLabel* maximumValLabel = nullptr;
     QLabel* timestepLabel = nullptr;
+    QLabel* neuronGlobalPropertiesLabel = nullptr;
+    QLabel* neuronCurrentTimestepPropertiesLabel = nullptr;
 };
 
 
@@ -141,11 +143,9 @@ private:
         std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep * 100, colorAttribute);
 
         auto attributeData = histogramDataLoader.getAttributeData(currentColorAttribute);
-        double propMin = attributeData.propertyMin;
-        double propMax = attributeData.propertyMax;
 
-        double labelMin = propMin;
-        double labelMax = propMax;
+        double labelMin = attributeData.globalStatistics.min;
+        double labelMax = attributeData.globalStatistics.max;
 
         if (derivatives) {
             std::tie(labelMin, labelMax) = diffMinMax(timestep, colorAttribute);
@@ -154,8 +154,13 @@ private:
         widgets.minimumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(labelMin, labelMax, pointFilter.lower_bound))));
         widgets.maximumValLabel->setText(QString::fromStdString(std::format("{:.2}", std::lerp(labelMin, labelMax, pointFilter.upper_bound))));
 
-        auto colors = loadColors(timestep, colorAttribute, labelMin, labelMax, pointFilter, derivatives);
+        auto& curStatistics = attributeData.summary[timestep];
 
+        auto neuronCurrentPropertiesString = std::format("min: {}\nmax: {}\nmean: {:.5}", 
+            curStatistics.min, curStatistics.max, curStatistics.mean);
+        widgets.neuronCurrentTimestepPropertiesLabel->setText(QString::fromStdString(neuronCurrentPropertiesString));
+
+        auto colors = loadColors(timestep, colorAttribute, labelMin, labelMax, pointFilter, derivatives);
         polyData->GetPointData()->SetScalars(colors);
     }
 
@@ -197,11 +202,12 @@ private:
 
         auto attributeData = histogramDataLoader.getAttributeData(colorAttribute);
 
+        auto globalStats = attributeData.globalStatistics;
         widgets.histogram->setTableData(attributeData.histogram, attributeData.summary, 
-            attributeData.propertyMin, attributeData.propertyMax);
+            globalStats);
 
         widgets.histogramSlider->setTableData(attributeData.histogram, attributeData.summary,
-            attributeData.propertyMin, attributeData.propertyMax);
+            globalStats);
 
         auto t2 = std::chrono::high_resolution_clock::now();
         std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
@@ -209,6 +215,10 @@ private:
 
         widgets.rangeSlider->setLowValue(0);
         widgets.rangeSlider->setHighValue(100);
+
+        auto neuronPropertiesString = std::format("min: {}\nmax: {}\nmean: {:.5}",
+            attributeData.globalStatistics.min, attributeData.globalStatistics.max, attributeData.globalStatistics.mean);
+        widgets.neuronGlobalPropertiesLabel->setText(QString::fromStdString(neuronPropertiesString));
     }
 
     void reloadHistogram(int timestep, int colorAttribute) {

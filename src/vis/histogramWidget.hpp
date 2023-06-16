@@ -18,6 +18,7 @@
 
 #include <span>
 
+#include "visUtility.hpp"
 
 
 enum HistogramDrawMode {
@@ -44,11 +45,11 @@ public:
         lastVisibleTick = lastTick;
     }
 
-    void setTableData(std::span<std::vector<int>> histogram, std::span<std::vector<double>> summary, double propertyMin, double propertyMax) {
+    void setTableData(std::span<std::vector<int>> histogram, std::span<Statistics> summary, Statistics globalSummary) {
         this->histogramTable = histogram;
         this->summaryTable = summary;
-        this->propertyMin = propertyMin;
-        this->propertyMax = propertyMax;
+        this->propertyMin = globalSummary.min;
+        this->propertyMax = globalSummary.max;
 
         loaded = true;
         recomputeMinMax();
@@ -74,7 +75,7 @@ protected:
     bool loaded = false;
     
     std::span<std::vector<int>> histogramTable{};
-    std::span<std::vector<double>> summaryTable{};
+    std::span<Statistics> summaryTable{};
     double propertyMin = NAN;
     double propertyMax = NAN;
 

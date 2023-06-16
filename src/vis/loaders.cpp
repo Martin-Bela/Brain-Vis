@@ -25,6 +25,7 @@
 #include <vector>
 #include <span>
 #include <ranges>
+#include <numeric>
 
 #include "../utility.hpp"
 #include "../edge.hpp"
@@ -33,6 +34,8 @@
 #include "visUtility.hpp"
 
 #include "loaders.hpp"
+
+namespace ranges = std::ranges;
 
 namespace {
 
@@ -113,19 +116,28 @@ namespace {
         return closePoints;
     }
 
-    struct MinMax {
-        double min;
-        double max;
-    };
-
-    MinMax computeMinMax(std::span<std::vector<double>> summaryTable) {
+    Statistics computeGlobalStatistics(std::span<Statistics> summaryTable) {
+        namespace ranges = std::ranges;
+        
         double max = -INFINITY;
         double min = INFINITY;
-        for (int i = 0; i < summaryTable.size(); i++) {
-            max = std::max(max, summaryTable[i][2]);
-            min = std::min(min, summaryTable[i][3]);
+        double sum = 0;
+        double mean = 0;
+        for (auto& stat : summaryTable) {
+            min = std::min(stat.min, min);
+            max = std::max(stat.max, max);
+            sum += stat.sum;
+            mean += stat.mean;
         }
-        return { min, max };
+
+        mean /= summaryTable.size();
+
+        return {
+            .mean = mean,
+            .sum = sum,
+            .min = min,
+            .max = max
+        };
     }
 }
 
@@ -443,10 +455,14 @@ void HistogramDataLoader::ensureLoaded(int colorAttribute) {
     auto unloaded = Unloaded;
     if (dataState[colorAttribute].compare_exchange_strong(unloaded, Loading)) {
         histogramData[colorAttribute] = parseCSV<int, ' '>((dataFolder / "monitors-hist-real/").string() + attributeToString(colorAttribute));
-        summaryData[colorAttribute] = parseCSV<double, ' '>((dataFolder / "monitors-histogram/").string() + attributeToString(colorAttribute));
-        auto minmax = computeMinMax(summaryData[colorAttribute]);
-        minimums[colorAttribute] = minmax.min;
-        maximums[colorAttribute] = minmax.max;
+        
+        auto statistics = parseCSV<double, ' '>((dataFolder / "monitors-histogram/").string() + attributeToString(colorAttribute));
+        summaryData[colorAttribute].reserve(statistics.size());
+        ranges::transform(statistics, std::back_inserter(summaryData[colorAttribute]),
+            [](const auto& vec) { return Statistics{ vec[0], vec[1], vec[3], vec[2] }; });
+
+        auto globalStats = computeGlobalStatistics(summaryData[colorAttribute]);
+        globalStatistics[colorAttribute] = globalStats;
 
         dataState[colorAttribute] = Loaded;
         dataState[colorAttribute].notify_all();
@@ -462,8 +478,7 @@ AttributeData HistogramDataLoader::getAttributeData(int colorAttribute) {
     return { 
         .histogram = histogramData[colorAttribute], 
         .summary = summaryData[colorAttribute],
-        .propertyMin = minimums[colorAttribute],
-        .propertyMax = maximums[colorAttribute],
+        .globalStatistics = globalStatistics[colorAttribute],
     };
 }
 

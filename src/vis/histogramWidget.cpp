@@ -33,13 +33,13 @@ void HistogramWidget::paintSummaryTick(QPainter& painter, int tick, float tickSi
         return;
     }
     painter.setPen(red);
-    painter.drawLine(x0, getYPos(summaryTable[tick][2]), x1, getYPos(summaryTable[tick + 1][2]));
+    painter.drawLine(x0, getYPos(summaryTable[tick].max), x1, getYPos(summaryTable[tick + 1].max));
 
     painter.setPen(blue);
-    painter.drawLine(x0, getYPos(summaryTable[tick][3]), x1, getYPos(summaryTable[tick + 1][3]));
+    painter.drawLine(x0, getYPos(summaryTable[tick].min), x1, getYPos(summaryTable[tick + 1].min));
 
     painter.setPen(black);
-    painter.drawLine(x0, getYPos(summaryTable[tick][0]), x1, getYPos(summaryTable[tick + 1][0]));
+    painter.drawLine(x0, getYPos(summaryTable[tick].mean), x1, getYPos(summaryTable[tick + 1].mean));
 }
 
 void HistogramWidget::paintSummary(QPainter& painter, bool redraw) {

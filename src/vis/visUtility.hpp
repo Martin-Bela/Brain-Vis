@@ -106,3 +106,10 @@ public:
         return QColor::fromRgbF(applyCoef(x, coefRed), applyCoef(x, coefGreen), applyCoef(x, coefBlue));
     }
 };
+
+struct Statistics {
+    double mean;
+    double sum;
+    double min;
+    double max;
+};

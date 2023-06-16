@@ -29,9 +29,9 @@ struct Range {
 
 struct AttributeData {
     std::span<std::vector<int>> histogram;
-    std::span<std::vector<double>> summary;
-    double propertyMin;
-    double propertyMax;
+    std::span<Statistics> summary;
+    
+    Statistics globalStatistics;
 };
 
 
@@ -51,9 +51,8 @@ class HistogramDataLoader {
 
         std::array<std::atomic<dataState>, 12> dataState;
         std::array<std::vector<std::vector<int>>, 12> histogramData;
-        std::array<std::vector<std::vector<double>>, 12> summaryData;
-        std::array<double, 12> minimums;
-        std::array<double, 12> maximums;
+        std::array<std::vector<Statistics>, 12> summaryData;
+        std::array<Statistics, 12> globalStatistics;
 
         std::atomic<bool> continueBackground = true;
         std::thread backgroundThread;
