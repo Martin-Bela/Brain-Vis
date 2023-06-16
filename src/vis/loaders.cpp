@@ -34,84 +34,101 @@
 
 #include "loaders.hpp"
 
+namespace {
 
+    struct Point3 {
+        double x;
+        double y;
+        double z;
 
-struct Point3 {
-    double x;
-    double y;
-    double z;
+        Point3(double x, double y, double z) {
+            this->x = x;
+            this->y = y;
+            this->z = z;
+        }
 
-    Point3(double x, double y, double z) {
-        this->x = x;
-        this->y = y;
-        this->z = z;
-    }
+        void add(Point3 b) {
+            x += b.x;
+            y += b.y;
+            z += b.z;
+        }
 
-    void add(Point3 b) {
-        x += b.x;
-        y += b.y;
-        z += b.z;
-    }
+        double size() {
+            return sqrt(x * x + y * y + z * z);
+        }
 
-    double size() {
-        return sqrt(x * x + y * y + z * z);
-    }
+        void scale(double scale) {
+            x *= scale;
+            y *= scale;
+            z *= scale;
+        }
 
-    void scale(double scale) {
-        x *= scale;
-        y *= scale;
-        z *= scale;
-    }
+        void normalize() {
+            double size = this->size();
+            x /= size;
+            y /= size;
+            z /= size;
+        }
 
-    void normalize() {
-        double size = this->size();
-        x /= size;
-        y /= size;
-        z /= size;
-    }
+        static double dist(Point3 a, Point3 b) {
+            return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
+        }
 
-    static double dist(Point3 a, Point3 b) {
-        return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
-    }
-    
-    static Point3 cross(Point3 a, Point3 b) {
-        return Point3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-    }
+        static Point3 cross(Point3 a, Point3 b) {
+            return Point3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+        }
 
-    static Point3 vector(Point3 a, Point3 b) {
-        Point3 p = Point3(a.x - b.x, a.y - b.y, a.z - b.z);
-        p.normalize();
-        return p;
-    }
+        static Point3 vector(Point3 a, Point3 b) {
+            Point3 p = Point3(a.x - b.x, a.y - b.y, a.z - b.z);
+            p.normalize();
+            return p;
+        }
 
-};
+    };
 
-std::vector<Point3> findClosestPoints(int index, std::vector<Point3>& points) {
-    std::vector<Point3> closePoints{ Point3(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0) };
-    std::vector<double> distances{ 500.0, 500.0, 500.0, 500.0 };
+    std::vector<Point3> findClosestPoints(int index, std::vector<Point3>& points) {
+        std::vector<Point3> closePoints{ Point3(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0) };
+        std::vector<double> distances{ 500.0, 500.0, 500.0, 500.0 };
 
-    for (int i = 0; i < points.size(); i++) {
-        if (i == index) continue;
+        for (int i = 0; i < points.size(); i++) {
+            if (i == index) continue;
 
-        double dist = Point3::dist(points[index], points[i]);
-        int pointsId = -1;
-        int distId = -1;
-        double bestDist = 0;
-        for (int j = 0; j < 4; j++) {
-            if (dist < distances[j] && distances[j] > bestDist) {
-                bestDist = distances[j];
-                pointsId = i;
-                distId = j;
+            double dist = Point3::dist(points[index], points[i]);
+            int pointsId = -1;
+            int distId = -1;
+            double bestDist = 0;
+            for (int j = 0; j < 4; j++) {
+                if (dist < distances[j] && distances[j] > bestDist) {
+                    bestDist = distances[j];
+                    pointsId = i;
+                    distId = j;
+                }
+            }
+
+            if (pointsId != -1) {
+                closePoints[distId] = points[pointsId];
+                distances[distId] = Point3::dist(points[pointsId], points[index]);
             }
         }
-
-        if (pointsId != -1) {
-            closePoints[distId] = points[pointsId];
-            distances[distId] = Point3::dist(points[pointsId], points[index]);
-        }
+        return closePoints;
     }
-    return closePoints;
+
+    struct MinMax {
+        double min;
+        double max;
+    };
+
+    MinMax computeMinMax(std::span<std::vector<double>> summaryTable) {
+        double max = -INFINITY;
+        double min = INFINITY;
+        for (int i = 0; i < summaryTable.size(); i++) {
+            max = std::max(max, summaryTable[i][2]);
+            min = std::min(min, summaryTable[i][3]);
+        }
+        return { min, max };
+    }
 }
+
 
 
 void loadPositions(vtkPoints& originalPositions, vtkPoints& scatteredPositions, vtkPoints& aggregatedPositions, std::vector<uint16_t>& mapping) {
@@ -186,9 +203,6 @@ void loadPositions(vtkPoints& originalPositions, vtkPoints& scatteredPositions, 
             originalPositions.InsertNextPoint(mPoint);
         }
     }
-
-    
-
 
     // This generates random poisson disk patterns (equally spaced points)
     // That are used to place the point clusters
@@ -420,6 +434,7 @@ std::vector<std::vector<StoredType>> parseCSV(std::string path) {
 
 
 
+
 void HistogramDataLoader::ensureLoaded(int colorAttribute) {
     if (dataState[colorAttribute] == Loaded) {
         return;
@@ -429,6 +444,10 @@ void HistogramDataLoader::ensureLoaded(int colorAttribute) {
     if (dataState[colorAttribute].compare_exchange_strong(unloaded, Loading)) {
         histogramData[colorAttribute] = parseCSV<int, ' '>((dataFolder / "monitors-hist-real/").string() + attributeToString(colorAttribute));
         summaryData[colorAttribute] = parseCSV<double, ' '>((dataFolder / "monitors-histogram/").string() + attributeToString(colorAttribute));
+        auto minmax = computeMinMax(summaryData[colorAttribute]);
+        minimums[colorAttribute] = minmax.min;
+        maximums[colorAttribute] = minmax.max;
+
         dataState[colorAttribute] = Loaded;
         dataState[colorAttribute].notify_all();
     }
@@ -437,16 +456,15 @@ void HistogramDataLoader::ensureLoaded(int colorAttribute) {
     }
 }
 
-std::span<std::vector<double>> HistogramDataLoader::getSummaryData(int colorAttribute) {
-    ensureLoaded(colorAttribute);
-    assert(summaryData[colorAttribute].size() > 0);
-    return summaryData[colorAttribute];
-}
-
-std::span<std::vector<int>> HistogramDataLoader::getHistogramData(int colorAttribute) {
+AttributeData HistogramDataLoader::getAttributeData(int colorAttribute) {
     ensureLoaded(colorAttribute);
     assert(histogramData[colorAttribute].size() > 0);
-    return histogramData[colorAttribute];
+    return { 
+        .histogram = histogramData[colorAttribute], 
+        .summary = summaryData[colorAttribute],
+        .propertyMin = minimums[colorAttribute],
+        .propertyMax = maximums[colorAttribute],
+    };
 }
 
 HistogramDataLoader::HistogramDataLoader() {

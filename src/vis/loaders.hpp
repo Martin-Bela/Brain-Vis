@@ -12,20 +12,28 @@
 #include <thread>
 #include <span>
 
-#include "../utility.hpp"
+#include "visUtility.hpp"
 
 struct Range {
-        double lower_bound;
-        double upper_bound;
+    double lower_bound;
+    double upper_bound;
 
-        static Range Whole() {
-            return { 0, 1 };
-        }
+    static Range Whole() {
+        return { 0, 1 };
+    }
 
-        bool inRange(double x) {
-            return lower_bound <= x && x <= upper_bound;
-        }
-    };
+    bool inRange(double x) {
+        return lower_bound <= x && x <= upper_bound;
+    }
+};
+
+struct AttributeData {
+    std::span<std::vector<int>> histogram;
+    std::span<std::vector<double>> summary;
+    double propertyMin;
+    double propertyMax;
+};
+
 
 std::pair<float, float> diffMinMax(int timestep, int colorAttribute);
 
@@ -38,13 +46,14 @@ void loadEdges(vtkMutableDirectedGraph& g, std::vector<uint16_t> map, int timest
 std::string attributeToString(int attribute);
 
 
-
 class HistogramDataLoader {
         enum dataState { Unloaded, Loading, Loaded };
 
         std::array<std::atomic<dataState>, 12> dataState;
         std::array<std::vector<std::vector<int>>, 12> histogramData;
         std::array<std::vector<std::vector<double>>, 12> summaryData;
+        std::array<double, 12> minimums;
+        std::array<double, 12> maximums;
 
         std::atomic<bool> continueBackground = true;
         std::thread backgroundThread;
@@ -52,9 +61,7 @@ class HistogramDataLoader {
         void ensureLoaded(int colorAttribute);
 
     public:
-        std::span<std::vector<double>> getSummaryData(int colorAttribute);
-
-        std::span<std::vector<int>> getHistogramData(int colorAttribute);
+        AttributeData getAttributeData(int colorAttribute);
 
         HistogramDataLoader();
         

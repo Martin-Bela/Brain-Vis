@@ -63,6 +63,13 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>Neuron attributes:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QComboBox" name="comboBox"/>
        </item>
        <item>
@@ -240,7 +247,7 @@
           </widget>
          </item>
          <item row="0" column="0" colspan="3">
-          <widget class="HistogramSliderWidget" name="sliderWidget" native="true">
+          <widget class="HistogramSliderWidget" name="histogramSlider" native="true">
            <property name="enabled">
             <bool>true</bool>
            </property>

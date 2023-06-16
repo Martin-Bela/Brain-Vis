@@ -25,7 +25,7 @@
 
 struct Widgets {
     HistogramWidget* histogram = nullptr;
-    HistogramSliderWidget* sliderWidget = nullptr;
+    HistogramSliderWidget* histogramSlider = nullptr;
     RangeSliderWidget* rangeSlider = nullptr;
     QLabel* minimumValLabel = nullptr;
     QLabel* maximumValLabel = nullptr;
@@ -140,9 +140,9 @@ private:
         widgets.timestepLabel->setText(QString::fromStdString(std::to_string(timestep * 100)));
         std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep * 100, colorAttribute);
 
-        auto summaryData = histogramDataLoader.getSummaryData(currentColorAttribute);
-        double propMin = widgets.sliderWidget->getMinVal();
-        double propMax = widgets.sliderWidget->getMaxVal();
+        auto attributeData = histogramDataLoader.getAttributeData(currentColorAttribute);
+        double propMin = attributeData.propertyMin;
+        double propMax = attributeData.propertyMax;
 
         double labelMin = propMin;
         double labelMax = propMax;
@@ -195,11 +195,13 @@ private:
     void loadHistogramData(int colorAttribute) {
         auto t1 = std::chrono::high_resolution_clock::now();
 
-        auto histData = histogramDataLoader.getHistogramData(colorAttribute);
-        auto summData = histogramDataLoader.getSummaryData(colorAttribute);
+        auto attributeData = histogramDataLoader.getAttributeData(colorAttribute);
 
-        widgets.histogram->setTableData(histData, summData);
-        widgets.sliderWidget->setTableData(histData, summData);
+        widgets.histogram->setTableData(attributeData.histogram, attributeData.summary, 
+            attributeData.propertyMin, attributeData.propertyMax);
+
+        widgets.histogramSlider->setTableData(attributeData.histogram, attributeData.summary,
+            attributeData.propertyMin, attributeData.propertyMax);
 
         auto t2 = std::chrono::high_resolution_clock::now();
         std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1) << "\n";
@@ -271,9 +273,9 @@ public slots:
 
     void changeDrawMode(int modeType) {
         widgets.histogram->changeDrawMode((HistogramDrawMode)modeType);
-        widgets.sliderWidget->changeDrawMode((HistogramDrawMode)modeType);
+        widgets.histogramSlider->changeDrawMode((HistogramDrawMode)modeType);
         reloadHistogram(currentTimestep, currentColorAttribute);
-        widgets.sliderWidget->update();
+        widgets.histogramSlider->update();
     }
 
     void changeColorAttribute(int colorAttribute) {
@@ -282,7 +284,7 @@ public slots:
         reloadColors(currentTimestep, colorAttribute, derivatives);
         reloadHistogram(currentTimestep, colorAttribute);
         context.render();
-        widgets.sliderWidget->update();
+        widgets.histogramSlider->update();
     }
 
     void showEdges(int state) {
@@ -300,8 +302,8 @@ public slots:
         bool logEnabled = state == Qt::Checked;
 
         widgets.histogram->logarithmicScaleEnabled = logEnabled;
-        widgets.sliderWidget->logarithmicScaleEnabled = logEnabled;
-        widgets.sliderWidget->update();
+        widgets.histogramSlider->logarithmicScaleEnabled = logEnabled;
+        widgets.histogramSlider->update();
         widgets.histogram->update();
     }
 };

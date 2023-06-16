@@ -21,7 +21,7 @@ HistogramWidget::HistogramWidget(QWidget *parent)
 }
 
 int HistogramWidget::getYPos(double value) {
-    auto val = geometry().height() - ((value - sMin) / (sMax - sMin)) * geometry().height();
+    auto val = geometry().height() - ((value - propertyMin) / (propertyMax - propertyMin)) * geometry().height();
     return val;
 }
 
@@ -117,17 +117,6 @@ void HistogramWidget::paintHistogram(QPainter& painter) {
 
 }
 
-void HistogramWidget::paintMinMaxLabels(QPainter &painter, QColor color) {  
-        // draw Text
-    int xOffset = 5;
-    int yOffset = 10;
-
-    painter.setPen(color);
-    painter.drawText(xOffset, yOffset, std::format("{}", sMax).c_str());
-    painter.drawText(xOffset, geometry().height() - 2, std::format("{}", sMin).c_str());
-
-}
-
 void HistogramWidget::paintEvent(QPaintEvent * /* event */)
 {
     if(!isLoaded())
@@ -142,19 +131,16 @@ void HistogramWidget::paintEvent(QPaintEvent * /* event */)
     case Summary:
         paintSummary(painter, true);
         painter.setPen(QPen({ 0, 255, 0 }));
-        //paintMinMaxLabels(painter, Qt::black);
         break;
     case Histogram:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
-        //paintMinMaxLabels(painter, Qt::black);
         break;
     case Both:
         paintHistogram(painter);
         painter.setPen(QPen({ 255, 255, 255 }));
         paintSummary(painter, false);
         painter.setPen(QPen({ 0, 255, 0 }));
-        //paintMinMaxLabels(painter, Qt::black);
         break;
     }
     fastRepaint = false;
@@ -217,15 +203,6 @@ void HistogramWidget::setTick(int newTick) {
     previousTicks.emplace_back(tick);
     tick = newTick;
     update();
-}
-
-void HistogramWidget::recomputeSummaryMinMax() {
-    sMax = -INFINITY;
-    sMin = INFINITY;
-    for (int i = 0; i < summaryTable.size(); i++) {
-        sMax = std::fmax(sMax, summaryTable[i][2]);
-        sMin = std::fmin(sMin, summaryTable[i][3]);
-    }
 }
 
 void HistogramWidget::recomputeMinMax() {

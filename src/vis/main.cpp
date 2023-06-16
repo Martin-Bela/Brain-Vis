@@ -22,7 +22,7 @@ namespace { //anonymous namespace
             mainUI.init();
             mainUI->setupUi(mainWindow.ptr());
 
-            visualisation.init(Widgets{ mainUI->bottomPanel, mainUI->sliderWidget, mainUI->rangeSlider, 
+            visualisation.init(Widgets{ mainUI->bottomPanel, mainUI->histogramSlider, mainUI->rangeSlider, 
                 mainUI->minValLabel, mainUI->maxValLabel, mainUI->timestepLabel });
             visualisation->loadData();
 
@@ -32,8 +32,8 @@ namespace { //anonymous namespace
             
             mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
             mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);
-            mainUI->sliderWidget->setFocusPolicy(Qt::ClickFocus);
-            mainUI->sliderWidget->setAttribute(Qt::WA_OpaquePaintEvent);
+            mainUI->histogramSlider->setFocusPolicy(Qt::ClickFocus);
+            mainUI->histogramSlider->setAttribute(Qt::WA_OpaquePaintEvent);
 
             auto attributeNames = std::to_array<const char*>({ "fired", "fired fraction", "activity", "dampening", "current calcium",
                 "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
@@ -51,7 +51,7 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->comboBox_2, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeDrawMode);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
             QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestep);
-            QObject::connect(mainUI->sliderWidget, &HistogramSliderWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestepRange);
+            QObject::connect(mainUI->histogramSlider, &HistogramSliderWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestepRange);
             QObject::connect(mainUI->logScaleCheckbox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::logCheckboxChange);
             QObject::connect(mainUI->rangeSlider, &RangeSliderWidget::valueChange, visualisation.ptr(), &Visualisation::setPointFilter);
             QObject::connect(mainUI->pointSizeSlider, &QSlider::valueChanged, visualisation.ptr(), &Visualisation::changePointSize);

@@ -44,21 +44,14 @@ public:
         lastVisibleTick = lastTick;
     }
 
-    double getMinVal() {
-        return sMin;
-    }
-
-    double getMaxVal() {
-        return sMax;
-    }
-
-    void setTableData(std::span<std::vector<int>> histogramData, std::span<std::vector<double>> summaryData) {
-        this->histogramTable = histogramData;
-        this->summaryTable = summaryData;
+    void setTableData(std::span<std::vector<int>> histogram, std::span<std::vector<double>> summary, double propertyMin, double propertyMax) {
+        this->histogramTable = histogram;
+        this->summaryTable = summary;
+        this->propertyMin = propertyMin;
+        this->propertyMax = propertyMax;
 
         loaded = true;
         recomputeMinMax();
-        recomputeSummaryMinMax();
     }
     
     bool isLoaded() {
@@ -80,18 +73,19 @@ protected:
     bool fastRepaint = false;
     bool loaded = false;
     
-    double max = 0; 
-    double min = 0;
-    double sMax = 0;
-    double sMin = 0;
-    
     std::span<std::vector<int>> histogramTable{};
     std::span<std::vector<double>> summaryTable{};
+    double propertyMin = NAN;
+    double propertyMax = NAN;
+
     HistogramDrawMode drawMode = Histogram;
     int tick = 1;
     std::vector<int> previousTicks;
     int firstVisibleTick = 0;
     int lastVisibleTick = 500;
+
+    double min = NAN;
+    double max = NAN;
     
     int getYPos(double value);
 
@@ -127,9 +121,7 @@ private:
     void mouseMoveEvent(QMouseEvent*) override;
     void resizeEvent(QResizeEvent*) override;
     void keyPressEvent(QKeyEvent* event) override;
-    void recomputeSummaryMinMax();
     void recomputeMinMax();
-
 };
 //! [0]
 
