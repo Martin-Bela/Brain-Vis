@@ -4,11 +4,36 @@
 
 #include "visUtility.hpp"
 #include "visualisation.hpp"
+#include "popupWidget.hpp"
 
 #include "ui_mainWindow.h"
 
 
 namespace { //anonymous namespace
+
+    class MainWindow : public QMainWindow {
+        std::vector<PopUpWidget*> popUpWidgets;
+    public:
+        void addPopUp(PopUpWidget* widget) {
+            popUpWidgets.push_back(widget);
+        }
+
+        void resizeEvent(QResizeEvent* event) override {
+            QWidget::resizeEvent(event);
+            
+            for (auto* popUp : popUpWidgets) {
+                popUp->adjustPosition();
+            }
+        }
+
+        void moveEvent(QMoveEvent *event) override {
+            QWidget::moveEvent(event);
+            
+            for (auto* popUp : popUpWidgets) {
+                popUp->adjustPosition();
+            }
+        }
+    };
 
     class Application {
     public:
@@ -35,6 +60,9 @@ namespace { //anonymous namespace
             mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);
             mainUI->histogramSlider->setFocusPolicy(Qt::ClickFocus);
             mainUI->histogramSlider->setAttribute(Qt::WA_OpaquePaintEvent);
+
+            auto* popup = new PropertiesPopUp(mainWindow.ptr(), mainUI->attributesHelp);
+            mainWindow->addPopUp(popup);
 
             auto attributeNames = std::to_array<const char*>({ "fired", "fired fraction", "activity", "dampening", "current calcium",
                 "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
@@ -68,7 +96,7 @@ namespace { //anonymous namespace
         }
 
         DeferredInit<QApplication> application;
-        DeferredInit<QMainWindow> mainWindow;
+        DeferredInit<MainWindow> mainWindow;
         DeferredInit<Ui::MainWindow> mainUI;
 
         DeferredInit<Visualisation> visualisation;
