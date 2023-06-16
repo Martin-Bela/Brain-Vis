@@ -18,10 +18,15 @@ extern std::mt19937 rand_gen;
 
 extern vtkNew<vtkNamedColors> namedColors;
 
+inline std::string readWholeFile(std::ifstream& file) {
+    checkFile(file);
+    return std::string(std::istreambuf_iterator<char>{file}, {});
+}
 
 std::array<float, 3> hslToRgb(std::array<float, 3> hsl);
 
 std::array<unsigned char, 3> generateNiceColor();
+
 
 template<typename T>
 class DeferredInit {

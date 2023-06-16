@@ -1,18 +1,18 @@
-#include "QRangeSlider.hpp"
+#include "rangeSliderWidget.hpp"
 
 #include "visUtility.hpp"
 
 #include <QPainter>
 #include <QMouseEvent>
 
-QRangeSlider::QRangeSlider(QWidget* parent) : QWidget(parent) {
+RangeSliderWidget::RangeSliderWidget(QWidget* parent) : QWidget(parent) {
 	_lowValue = _minimum;
 	_highValue = _maximum;
 
 	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 }
 
-void QRangeSlider::setMinimum(const unsigned int minimum) {
+void RangeSliderWidget::setMinimum(const unsigned int minimum) {
 	if (_minimum != minimum) {
 		_minimum = minimum;
 		if (_minimum >= _maximum) {
@@ -34,7 +34,7 @@ void QRangeSlider::setMinimum(const unsigned int minimum) {
 	}
 }
 
-void QRangeSlider::setMaximum(const unsigned int maximum)
+void RangeSliderWidget::setMaximum(const unsigned int maximum)
 {
 	if (maximum != _maximum) {
 		_maximum = maximum;
@@ -57,11 +57,11 @@ void QRangeSlider::setMaximum(const unsigned int maximum)
 	}
 }
 
-unsigned int QRangeSlider::lowValue() const {
+unsigned int RangeSliderWidget::lowValue() const {
 	return _lowValue;
 }
 
-void QRangeSlider::setLowValue(const unsigned int lowValue) {
+void RangeSliderWidget::setLowValue(const unsigned int lowValue) {
 	if (_lowValue != lowValue) {
 		_lowValue = lowValue;
 		if (_lowValue >= _maximum) {
@@ -81,12 +81,12 @@ void QRangeSlider::setLowValue(const unsigned int lowValue) {
 	}
 }
 
-unsigned int QRangeSlider::highValue() const
+unsigned int RangeSliderWidget::highValue() const
 {
 	return _highValue;
 }
 
-void QRangeSlider::setHighValue(const unsigned int highValue) {
+void RangeSliderWidget::setHighValue(const unsigned int highValue) {
 	if (_highValue != highValue) {
 		_highValue = highValue;
 		
@@ -107,29 +107,29 @@ void QRangeSlider::setHighValue(const unsigned int highValue) {
 	}
 }
 
-unsigned int QRangeSlider::step() const {
+unsigned int RangeSliderWidget::step() const {
 	return _step;
 }
 
-void QRangeSlider::setStep(const unsigned int step) {
+void RangeSliderWidget::setStep(const unsigned int step) {
 	_step = step;
 }
 
-void QRangeSlider::setRange(const unsigned int minimum, const unsigned int maximum) {
+void RangeSliderWidget::setRange(const unsigned int minimum, const unsigned int maximum) {
 	setMinimum(minimum);
 	setMaximum(maximum);
 }
 
-QSize QRangeSlider::sizeHint() const {
+QSize RangeSliderWidget::sizeHint() const {
 	return minimumSizeHint();
 	//return QSize(100 * HANDLE_SIZE + 2 * PADDING, 2 * HANDLE_SIZE + 2 * PADDING);
 }
 
-QSize QRangeSlider::minimumSizeHint() const {
+QSize RangeSliderWidget::minimumSizeHint() const {
 	return QSize(2 * PADDING, 2 * (PADDING + HANDLE_RADIUS));
 }
 
-void QRangeSlider::mousePressEvent(QMouseEvent* e) {
+void RangeSliderWidget::mousePressEvent(QMouseEvent* e) {
 	float mouseY = e->position().y();
 
 	auto dist_low = std::abs(valueToYCoord(_lowValue) - mouseY);
@@ -150,12 +150,12 @@ void QRangeSlider::mousePressEvent(QMouseEvent* e) {
 	_movingHandle = noHandle;
 }
 
-void QRangeSlider::mouseReleaseEvent(QMouseEvent* e) {
+void RangeSliderWidget::mouseReleaseEvent(QMouseEvent* e) {
 	Q_UNUSED(e);
 	_movingHandle = noHandle;
 }
 
-void QRangeSlider::mouseMoveEvent(QMouseEvent* e) {
+void RangeSliderWidget::mouseMoveEvent(QMouseEvent* e) {
 	int slider_height = height() - 2 * PADDING;
 
 	float mouseY = e->position().y() - PADDING;
@@ -171,13 +171,13 @@ void QRangeSlider::mouseMoveEvent(QMouseEvent* e) {
 	}
 }
 
-int QRangeSlider::valueToYCoord(int value) const {
+int RangeSliderWidget::valueToYCoord(int value) const {
 	int slider_height = height() - 2 * PADDING;
 	double pos_lower = 1 - map_to_unit_range(_minimum, _maximum, value);
 	return round(slider_height * pos_lower) + PADDING;
 }
 
-void QRangeSlider::paintEvent(QPaintEvent* event) {
+void RangeSliderWidget::paintEvent(QPaintEvent* event) {
 	Q_UNUSED(event);
 
 	ColorMixer colorMixer(QColor::fromRgbF(0, 0, 1), QColor::fromRgbF(0.7, 0.7, 0.7), QColor::fromRgbF(1, 0, 0), 0.5);

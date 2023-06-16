@@ -106,7 +106,7 @@ void HistogramSliderWidget::paintHistogram(QPainter& painter)
 void HistogramSliderWidget::paintHistogramTick(QPainter& painter, int x, float binSize, float tickSize)
 {
     for (int y = 0; y < getBinCount(); y++) {
-        int y_pos = getBinCount() - y - 1;
+        int y_pos = int(getBinCount()) - y - 1;
         double val = 0;
         for (int i = 0; i < dataBinSize; i++) {
             double v = histogramTable[x + i][y] / (max + 1);

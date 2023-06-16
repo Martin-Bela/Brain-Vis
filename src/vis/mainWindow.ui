@@ -200,23 +200,6 @@
        </item>
        <item row="3" column="2">
         <layout class="QGridLayout" name="sliderGridLayout">
-         <item row="1" column="2">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>999900</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="1">
           <widget class="QLabel" name="timestepLabel">
            <property name="text">
@@ -224,6 +207,35 @@
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLabel" name="label_3">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>999900</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
            </property>
           </widget>
          </item>
@@ -295,7 +307,7 @@
           </widget>
          </item>
          <item row="0" column="1" rowspan="2">
-          <widget class="QRangeSlider" name="rangeSlider" native="true">
+          <widget class="RangeSliderWidget" name="rangeSlider" native="true">
            <property name="minimumSize">
             <size>
              <width>10</width>
@@ -323,9 +335,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>QRangeSlider</class>
+   <class>RangeSliderWidget</class>
    <extends>QWidget</extends>
-   <header>QRangeSlider.hpp</header>
+   <header>rangeSliderWidget.hpp</header>
    <container>1</container>
   </customwidget>
   <customwidget>

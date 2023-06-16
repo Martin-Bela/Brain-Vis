@@ -1,12 +1,14 @@
+#pragma once
+
 #include <QWidget>
 
-class QRangeSlider : public QWidget
+class RangeSliderWidget : public QWidget
 {
 
     Q_OBJECT
 
 public:
-    QRangeSlider(QWidget *parent = nullptr);
+    RangeSliderWidget(QWidget *parent = nullptr);
     unsigned int minimum() const { return _minimum; };
     unsigned int maximum() const { return _maximum; };
     unsigned int lowValue() const;
