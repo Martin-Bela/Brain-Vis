@@ -26,10 +26,11 @@
 struct Widgets {
     HistogramWidget* histogram = nullptr;
     HistogramSliderWidget* histogramSlider = nullptr;
+    HistogramSliderLabelWidget* histogramSliderLabel = nullptr;
     RangeSliderWidget* rangeSlider = nullptr;
+
     QLabel* minimumValLabel = nullptr;
     QLabel* maximumValLabel = nullptr;
-    QLabel* timestepLabel = nullptr;
     QLabel* neuronGlobalPropertiesLabel = nullptr;
     QLabel* neuronCurrentTimestepPropertiesLabel = nullptr;
 };
@@ -139,8 +140,8 @@ private:
         currentColorAttribute = colorAttribute;
         currentTimestep = timestep;
 
-        widgets.timestepLabel->setText(QString::fromStdString(std::to_string(timestep * 100)));
         std::cout << std::format("Reloading colors - timestep: {}, attribute: {}\n", timestep * 100, colorAttribute);
+        widgets.histogramSliderLabel->setTimestep(timestep);
 
         auto attributeData = histogramDataLoader.getAttributeData(currentColorAttribute);
 

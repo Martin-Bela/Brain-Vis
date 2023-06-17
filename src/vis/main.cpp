@@ -47,8 +47,8 @@ namespace { //anonymous namespace
             mainUI.init();
             mainUI->setupUi(mainWindow.ptr());
 
-            visualisation.init(Widgets{ mainUI->bottomPanel, mainUI->histogramSlider, mainUI->rangeSlider, 
-                mainUI->minValLabel, mainUI->maxValLabel, mainUI->timestepLabel, 
+            visualisation.init(Widgets{ mainUI->bottomPanel, mainUI->histogramSlider, mainUI->histogramSliderLabel,
+                mainUI->rangeSlider,  mainUI->minValLabel, mainUI->maxValLabel, 
                 mainUI->neuronGlobalPropertiesLabel, mainUI->neuronCurrentTimestepPropertiesLabel });
             visualisation->loadData();
 
