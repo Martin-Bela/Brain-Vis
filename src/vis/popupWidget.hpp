@@ -14,7 +14,7 @@ public:
 
     QSize sizeHint() const;
 
-    void adjustPosition();
+    virtual void adjustPosition();
     //void resizeEvent(QResizeEvent *event) override;
     //void moveEvent(QMoveEvent *event) override;
 protected:
@@ -64,4 +64,6 @@ class HistogramPopUp : public PopUpWidget {
     
 public:
     HistogramPopUp(QWidget* parent, QPushButton* button);
+
+    void adjustPosition() override;
 };

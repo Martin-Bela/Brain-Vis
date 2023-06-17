@@ -23,7 +23,7 @@ void PopUpWidget::adjustPosition() {
     QRect rect = button->geometry();
     QPoint position = parent->mapToGlobal(rect.topRight());
     position.setX(position.x() + 10);
-    setGeometry(QRect(position, QSize(rect.width(),200)));
+    setGeometry(QRect(position, geometry().size()));
 }
 
 QSize PopUpWidget::sizeHint() const
@@ -37,7 +37,7 @@ HistogramPopUp::HistogramPopUp(QWidget* parent, QPushButton* button) :
     QImage image(10, magmaColorMap.size(), QImage::Format_RGB888);
     for (int i = 0; const auto & pixel : magmaColorMap) {
         for (int x = 0; x < image.width(); x++) {
-            image.setPixelColor(x, i, pixel.rgb());
+            image.setPixelColor(x, image.height() - 1 - i, pixel.rgb());
         }
         i++;
     }
@@ -49,4 +49,12 @@ HistogramPopUp::HistogramPopUp(QWidget* parent, QPushButton* button) :
     setWindowTitle("Histogram tooltip");
 
     form.image_label->setPixmap(pixmap);
+}
+
+void HistogramPopUp::adjustPosition() {
+    QRect rect = button->geometry();
+    QPoint position = parent->mapToGlobal(rect.topRight());
+    position.setX(position.x() + 10);
+    position.setY(position.y() - geometry().size().height());
+    setGeometry(QRect(position, geometry().size()));
 }
