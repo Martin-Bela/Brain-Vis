@@ -47,7 +47,7 @@ namespace { //anonymous namespace
             mainUI.init();
             mainUI->setupUi(mainWindow.ptr());
 
-            visualisation.init(Widgets{ mainUI->bottomPanel, mainUI->histogramSlider, mainUI->histogramSliderLabel,
+            visualisation.init(Widgets{ mainUI->histogram, mainUI->histogramSlider, mainUI->histogramSliderLabel,
                 mainUI->rangeSlider,  mainUI->minValLabel, mainUI->maxValLabel, 
                 mainUI->neuronGlobalPropertiesLabel, mainUI->neuronCurrentTimestepPropertiesLabel });
             visualisation->loadData();
@@ -56,13 +56,16 @@ namespace { //anonymous namespace
             visualisationWidget->setRenderWindow(visualisation->context.renderWindow);
             mainUI->mainVisDock->addWidget(visualisationWidget.ptr());
             
-            mainUI->bottomPanel->setFocusPolicy(Qt::ClickFocus);
-            mainUI->bottomPanel->setAttribute(Qt::WA_OpaquePaintEvent);
+            mainUI->histogram->setFocusPolicy(Qt::ClickFocus);
+            mainUI->histogram->setAttribute(Qt::WA_OpaquePaintEvent);
             mainUI->histogramSlider->setFocusPolicy(Qt::ClickFocus);
             mainUI->histogramSlider->setAttribute(Qt::WA_OpaquePaintEvent);
 
-            auto* popup = new PropertiesPopUp(mainWindow.ptr(), mainUI->attributesHelp);
-            mainWindow->addPopUp(popup);
+            auto* propertiesPopup = new PropertiesPopUp(mainWindow.ptr(), mainUI->attributesTooltip);
+            mainWindow->addPopUp(propertiesPopup);
+
+            auto* histogramPopup = new HistogramPopUp(mainWindow.ptr(), mainUI->histogramTooltip);
+            mainWindow->addPopUp(histogramPopup);
 
             auto attributeNames = std::to_array<const char*>({ "fired", "fired fraction", "activity", "dampening", "current calcium",
                 "target calcium", "synaptic input", "background input", "grown axons", "connected axons", "grown dendrites", "connected dendrites" });
@@ -79,7 +82,7 @@ namespace { //anonymous namespace
             QObject::connect(mainUI->comboBox, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeColorAttribute);
             QObject::connect(mainUI->comboBox_2, &QComboBox::currentIndexChanged, visualisation.ptr(), &Visualisation::changeDrawMode);
             QObject::connect(mainUI->showEdgesCheckBox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::showEdges);
-            QObject::connect(mainUI->bottomPanel, &HistogramWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestep);
+            QObject::connect(mainUI->histogram, &HistogramWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestep);
             QObject::connect(mainUI->histogramSlider, &HistogramSliderWidget::histogramCursorMoved, visualisation.ptr(), &Visualisation::changeTimestepRange);
             QObject::connect(mainUI->logScaleCheckbox, &QCheckBox::stateChanged, visualisation.ptr(), &Visualisation::logCheckboxChange);
             QObject::connect(mainUI->rangeSlider, &RangeSliderWidget::valueChange, visualisation.ptr(), &Visualisation::setPointFilter);

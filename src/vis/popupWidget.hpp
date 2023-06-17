@@ -4,6 +4,8 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
+#include "magmaColormap.hpp"
+
 class QPushButton;
 
 class PopUpWidget : public QWidget {
@@ -34,7 +36,7 @@ inline std::string_view propertiesTipText = R"(
 <b>Grown Axons</b>	Number of currently grown axonal boutons<br/>
 <b>Connected Axons</b>	Number of current outgoing connections<br/>
 <b>Grown Excitatory Dendrites</b>	Number of currently grown dendrite spines for excitatory connections<br/>
-<b>Connected Excitatory Dendrites</b>	Number of incoming excitatory connections<br/>
+<b>Connected Excitatory Dendrites</b>	Number of incoming excitatory connections
 )";
 
 class PropertiesPopUp : public PopUpWidget {
@@ -54,4 +56,12 @@ public:
 
         setLayout(layout);
     }
+};
+
+
+class HistogramPopUp : public PopUpWidget {
+    QPixmap pixmap;
+    
+public:
+    HistogramPopUp(QWidget* parent, QPushButton* button);
 };

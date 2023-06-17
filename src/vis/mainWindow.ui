@@ -91,7 +91,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="QPushButton" name="attributesHelp">
+          <widget class="QPushButton" name="attributesTooltip">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -113,6 +113,7 @@
            <property name="font">
             <font>
              <pointsize>7</pointsize>
+             <bold>true</bold>
             </font>
            </property>
            <property name="text">
@@ -238,29 +239,55 @@ mean:</string>
         </spacer>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QComboBox" name="comboBox_2">
+           <item>
+            <property name="text">
+             <string>Histogram</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Summary</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Both</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="histogramTooltip">
+           <property name="maximumSize">
+            <size>
+             <width>15</width>
+             <height>15</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>7</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>?</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <widget class="QCheckBox" name="logScaleCheckbox">
          <property name="text">
           <string>Histogram Log Scale</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="comboBox_2">
-         <item>
-          <property name="text">
-           <string>Histogram</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Summary</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Both</string>
-          </property>
-         </item>
         </widget>
        </item>
       </layout>
@@ -294,12 +321,6 @@ mean:</string>
           <widget class="HistogramSliderWidget" name="histogramSlider" native="true">
            <property name="enabled">
             <bool>true</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
            </property>
            <property name="minimumSize">
             <size>
@@ -428,7 +449,7 @@ mean:</string>
         </layout>
        </item>
        <item row="2" column="2">
-        <widget class="HistogramWidget" name="bottomPanel" native="true">
+        <widget class="HistogramWidget" name="histogram" native="true">
          <property name="enabled">
           <bool>true</bool>
          </property>

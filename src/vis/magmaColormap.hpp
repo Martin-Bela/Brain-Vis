@@ -13,4 +13,6 @@ constexpr QColor getMagmaColor(double i) {
     return magmaColorMap[index];
 }
 
+
+
     
