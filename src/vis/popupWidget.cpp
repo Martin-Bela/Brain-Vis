@@ -1,6 +1,7 @@
 #include<Qwidget>
 #include<QObject>
 #include<QPushButton>
+#include <Qstring>
 
 #include "popupWidget.hpp"
 
@@ -43,12 +44,12 @@ HistogramPopUp::HistogramPopUp(QWidget* parent, QPushButton* button) :
     }
     pixmap.convertFromImage(image);
 
-    Ui::Form form{};
-    form.setupUi(this);
+    Ui::HistogramTooltip HistogramTooltipUI{};
+    HistogramTooltipUI.setupUi(this);
 
     setWindowTitle("Histogram tooltip");
 
-    form.image_label->setPixmap(pixmap);
+    HistogramTooltipUI.image_label->setPixmap(pixmap);
 }
 
 void HistogramPopUp::adjustPosition() {
@@ -57,4 +58,52 @@ void HistogramPopUp::adjustPosition() {
     position.setX(position.x() + 10);
     position.setY(position.y() - geometry().size().height());
     setGeometry(QRect(position, geometry().size()));
+}
+
+namespace {
+    struct Attribute {
+        const char* name;
+        const char* describtion;
+    };
+
+    auto attributes = std::to_array<Attribute>({
+        { "Fired", "Boolean: Did the neuron fire within the last sample step" },
+        { "Fired Fraction", "In Percent: Number of firings since the last sampling" },
+        { "x", "Electric Activity" },
+        { "Secondary Variable", "Inhibition variable used for the firing model of Izhikevich" },
+        { "Calcium", "Current calcium level" },
+        { "Target Calcium", "Target calcium level" },
+        { "Synaptic Input", "Input electrical activity" },
+        { "Background Activity", "Background noise electric activity input" },
+        { "Grown Axons", "Number of currently grown axonal boutons" },
+        { "Connected Axons", "Number of current outgoing connections" },
+        { "Grown Excitatory Dendrites", "Number of currently grown dendrite spines for excitatory connections" },
+        { "Connected Excitatory Dendrites", "Number of incoming excitatory connections" }
+    });
+}
+
+PropertiesPopUp::PropertiesPopUp(QWidget* parent, QPushButton* button) :
+    PopUpWidget(parent, button)
+{
+    setWindowTitle("Neuron Properties");
+
+    auto* layout = new QGridLayout(this);
+
+    QFont bold{};
+    bold.setBold(true);
+
+    for (int i = 0; i < attributes.size(); i++) {
+        auto* nameLabel = new QLabel();
+        nameLabel->setText(attributes[i].name);
+        nameLabel->setFont(bold);
+        //nameLabel->setAlignment(Qt::AlignRight);
+       
+        layout->addWidget(nameLabel, i, 0);
+
+        auto* descLabel = new QLabel();
+        descLabel->setText(attributes[i].describtion);
+        layout->addWidget(descLabel, i, 1);
+    }
+
+    setLayout(layout);
 }
