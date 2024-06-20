@@ -1,9 +1,8 @@
 # Brain Visualisation
+![brain image](screenshot.jpg?raw=true "Screenshot of the application")
 
 Required vcpkg libraries:
 vtk[core, qt]
-
-
 
 ## How to preprocess data
 
